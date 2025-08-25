@@ -1,13 +1,13 @@
 
 
 
-from shapely.geometry import box
-import rasterio
-from shapely.geometry import Point
-import numpy as np
 import geopandas as gpd
+import rasterio
 from rasterio.features import rasterize
+from shapely.geometry import Point, box
+
 from .map_utils import *
+
 
 def generate_buffer_grid(segments, buffer_width, cell_size):
     # Unir tous les segments en un seul MultiLineString

@@ -1,22 +1,21 @@
-import streamlit as st
-import geopandas as gpd
-import pandas as pd
-import matplotlib.pyplot as plt
-from shapely.geometry import box, Point
-import numpy as np
-import zipfile
-import logging
 import io
-import sys
+import logging
 import os
-from shapely.geometry import LineString
+import sys
+import zipfile
+
+import geopandas as gpd
+import matplotlib.pyplot as plt
+import streamlit as st
+from shapely.geometry import LineString, Point, box
 
 # --------------------------
 # Project Imports and Setup
 # --------------------------
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-from difficulty_map.source import pipeline, plot_utils, map_utils
 from difficulty_map.logging_config import configure_logging
+from difficulty_map.source import map_utils, pipeline, plot_utils
+
 configure_logging()
 
 # --------------------------
@@ -159,16 +158,16 @@ if st.button("Confirm Study Area and Starting Point"):
 
     if params_key not in st.session_state.analysis_cache:
         with st.spinner("Running analysis..."):
-            segments, graph, trails_clip, roads_clip, gdf_cells, result = pipeline.run_difficulty_analysis(
+            segments, trails_clip, roads_clip, gdf_cells, result = pipeline.run_difficulty_analysis(
                 trails, roads, study_area_box, st.session_state.start_point,
                 process_buffer, buffer_width, cell_size,
                 st.session_state.threshold_btw_cp
             )
-            st.session_state.analysis_cache[params_key] = (segments, graph, trails_clip, roads_clip, gdf_cells, result)
+            st.session_state.analysis_cache[params_key] = (segments, trails_clip, roads_clip, gdf_cells, result)
             st.session_state["last_params_key"] = params_key
             st.success("Analysis complete.")
     else:
-        segments, graph, trails_clip, roads_clip, gdf_cells, result = st.session_state.analysis_cache[params_key]
+        segments,trails_clip, roads_clip, gdf_cells, result = st.session_state.analysis_cache[params_key]
         st.info("Loaded from cache.")
     if "confirmed_points" not in st.session_state or st.session_state.confirmed_points.empty :
         logging.info("No confirmed points")
@@ -186,7 +185,7 @@ if st.button("Confirm Study Area and Starting Point"):
     # Display results
     plot_start_point = st.session_state.study_area_geom.contains(st.session_state.start_point).values[0]
 
-    plot_segments_streamlit(segments, graph, trails_clip, roads_clip, st.session_state.start_point, gdf_cells, process_buffer,
+    plot_segments_streamlit(segments, trails_clip, roads_clip, st.session_state.start_point, gdf_cells, process_buffer,
                             gdf_study_points=st.session_state.study_points_results, plot_start_point= plot_start_point)
 
     # Export

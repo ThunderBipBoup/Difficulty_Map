@@ -1,6 +1,7 @@
-import streamlit as st
 import geopandas as gpd
-from shapely.geometry import box, Point
+import streamlit as st
+from shapely.geometry import Point, box
+
 from difficulty_map.source import map_utils
 
 

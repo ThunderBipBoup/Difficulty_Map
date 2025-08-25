@@ -1,9 +1,10 @@
-import numpy as np
 import heapq
 import time
-from shapely.geometry import LineString
-from .roads import dist_on_road
 
+import numpy as np
+from shapely.geometry import LineString
+
+from .roads import dist_on_road
 
 # ===================================================== #
 #   DISTANCE & GEOMETRY UTILITIES
@@ -198,7 +199,7 @@ def remove_segments_between(all_segments, trail_id, cp1, cp2):
     ]
 
 
-def process_neighbors(cp, graph, queue, src, all_segments_dijk, trail_difficulty_by_distance):
+def process_neighbors(cp, queue, src, all_segments_dijk, trail_difficulty_by_distance):
     """
     Process all neighbors of a given cutting point in the Dijkstra expansion.
     Updates neighbor cutting points if a cheaper path is found.
@@ -240,7 +241,7 @@ def process_neighbors(cp, graph, queue, src, all_segments_dijk, trail_difficulty
     return all_segments_dijk
 
 
-def dijkstra(graph, starting_cps, src, roads, start_point):
+def dijkstra(starting_cps, src, roads, start_point):
     """
     Dijkstra-like algorithm for propagating trail difficulty from starting points.
 
@@ -271,7 +272,7 @@ def dijkstra(graph, starting_cps, src, roads, start_point):
         list_visited.append(cp)
 
         all_segments_dijk = process_neighbors(
-            cp, graph, queue, src, all_segments_dijk, trail_difficulty_by_distance
+            cp, queue, src, all_segments_dijk, trail_difficulty_by_distance
         )
 
     total_time = time.time() - start_time
