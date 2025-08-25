@@ -41,7 +41,7 @@ class CuttingPoint:
         self.total_elev_gain = float("inf")
         self.total_descent = float("inf")
         self.is_connection_to_road = roads.distance(self.geom).min() < 40
-
+        #TODO: attention au 40, à adapter
     # def __hash__(self):
     # return hash((self.geom.x, self.geom.y))
 
@@ -50,27 +50,6 @@ class CuttingPoint:
 
     def __lt__(self, other):
         return self.best_diff < other.best_diff
-
-
-# TODO : si ça se trouve il y a pas besoin de la classe Graph
-
-
-class Graph:
-    def __init__(self):
-        self.edges = defaultdict(dict)  # cp -> neighbors -> List[geometry,processed)]
-        self.nodes = set()
-
-    def add_edge(self, cp1, cp2):
-        seg_geom_1 = LineString([cp1.geom, cp2.geom])
-        self.edges[cp1][cp2] = [seg_geom_1, 0]
-        seg_geom_2 = LineString([cp2.geom, cp1.geom])
-        self.edges[cp2][cp1] = [seg_geom_2, 0]  # non-oriented
-        self.nodes.add(cp1)
-        self.nodes.add(cp2)
-
-    def edge_processed(self, cp1, cp2):
-        self.edges[cp1][cp2][1] += 1
-        self.edges[cp2][cp1][1] += 1
 
 
 class Trail:

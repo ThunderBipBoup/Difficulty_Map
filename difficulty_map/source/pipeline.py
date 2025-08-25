@@ -11,19 +11,9 @@ from .buffer import *
 from .classes import *
 from .cutting_points import *
 from .dijkstra import *
-from .graph import *
 from .map_utils import *
 from .plot_utils import *
 from .roads import *
-
-
-# la fonction inutile
-def load_input_data():
-    logging.info("Loading raster data")
-    logging.info("Reading and preparing vector layers")
-    trails, roads = read_and_prepare_layers()
-    return trails, roads
-
 
 
 def run_difficulty_analysis(trails, roads, small_box, start_pt, process_buffer, buffer_width, cell_size,threshold_btw_cp):
@@ -66,15 +56,8 @@ def run_difficulty_analysis(trails, roads, small_box, start_pt, process_buffer, 
     # -----------------------------
 
     logging.info("Initializing CuttingPoints")
-    filled_dict_trails = initialize_cutting_points(trails_dict, roads,threshold_btw_cp)
-
-    # -----------------------------
-    # 2. Build graph
-    # -----------------------------
-
-    logging.info("Building graph from trail network")
-    graph, all_cutting_points = build_graph_from_trails(filled_dict_trails, src)
-
+    all_cutting_points = build_cutting_points(trails_dict, roads,threshold_btw_cp)
+    
     # -----------------------------
     # 3. Launch propagation
     # -----------------------------
@@ -82,11 +65,8 @@ def run_difficulty_analysis(trails, roads, small_box, start_pt, process_buffer, 
     logging.info("Starting propagation...")
     starting_points = [cp for cp in all_cutting_points if cp.is_connection_to_road]
 
-    print(f" Number of nodes: {len(graph.nodes)}")
-    print(f" Number of edges: {len(graph.edges)}")
 
-
-    segments, visited_cps, metrics = dijkstra( starting_points, src,roads,start_pt)
+    segments, metrics = dijkstra( starting_points, src,roads,start_pt)
             
     # -----------------------------
     # 4. Export results
@@ -149,14 +129,11 @@ def study_area_displaying(trails, roads, study_area, show_landform):
             logging.info(f"Raster opened: crs={src.crs} bounds={src.bounds}")
             out_image, out_transform = mask(src, bbox_geojson, crop=True)
 
-            # 1 bande
             data = out_image[0].astype("float32")
 
-            # nodata → NaN (si pas défini, on ne touche à rien)
             if src.nodata is not None:
                 data[data == src.nodata] = np.nan
 
-            # extent robuste = (xmin, xmax, ymin, ymax)
             xmin, xmax, ymin, ymax = plotting_extent(data, out_transform)
             extent = [xmin, xmax, ymin, ymax]
 

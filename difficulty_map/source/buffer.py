@@ -20,7 +20,6 @@ def generate_buffer_grid(segments, buffer_width, cell_size):
     
     transform = rasterio.transform.from_origin(bounds[0], bounds[3], cell_size, cell_size)
 
-    # Rasteriser la zone tampon
     mask = rasterize(
         [(buffered, 1)],
         out_shape=(height, width),
@@ -28,10 +27,6 @@ def generate_buffer_grid(segments, buffer_width, cell_size):
         fill=0,
         dtype='uint8'
     )
-    print("Taille de la grille :", mask.shape)
-    print("Nombre de cellules retenues :", mask.sum())
-    print("Taille cellule (m) :", cell_size)
-    print("Largeur zone buffer (m) :", mask.shape[1] * cell_size)
 
     return mask, transform
 
@@ -42,22 +37,20 @@ def analyze_cells(mask, transform, raster_altitude, segments):
     for row in range(height):
         for col in range(width):
             if mask[row, col] == 0:
-                continue  # hors buffer
+                continue  # out of buffer
 
             x, y = rasterio.transform.xy(transform, row, col, offset='center')
             point = Point(x, y)
 
-            # Altitude locale
+            # Local altitude
             window = rasterio.windows.Window(col, row, 1, 1)
             alt = raster_altitude.read(1, window=window)[0, 0]
 
-            # Trouver segment le plus proche
             nearest_seg = min(segments, key=lambda s: s["geometry"].distance(point))
             dist_to_seg = nearest_seg["geometry"].distance(point)
             inherited_difficulty = nearest_seg["total_diff"]
 
-            # Formule : exemple pondérée
-            if alt>100 : print("Altitude : ", alt)
+            # TODO : adapter avec les poids
             local_difficulty = alt * dist_to_seg * 0.8 + inherited_difficulty *0.2
             results.append({
                 "geometry": Point(x, y),

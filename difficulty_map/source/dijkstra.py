@@ -288,7 +288,7 @@ def dijkstra(starting_cps, src, roads, start_point):
         "avg_seg_diff": round(float(np.nanmean(segment_difficulties)), 2) if segment_difficulties.size > 0 else None,
     }
 
-    return all_segments_dijk, list_visited, metrics
+    return all_segments_dijk, metrics
 
 
 # ===================================================== #
