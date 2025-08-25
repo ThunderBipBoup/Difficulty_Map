@@ -13,21 +13,30 @@ logger = logging.getLogger(__name__)
 # ----------------------------- #
 #on peut pas remplacer all_cutting_points par une utilisation de dict_cp_on_trails ?
 
-def initialize_cutting_points(trails_dict, roads_gdf, threshold):
-    """                                                                                    
-    Compute cutting points for all trails and build a graph-like structure between them.
 
-    Parameters:
-        trails_dict (dict): {trail: []}
-        roads_gdf (GeoDataFrame): Road network
-        threshold (float): Distance threshold for connecting trail endpoints
 
-    Returns:
-        trails_dict (dict): {trail: list of CuttingPoint}
+def build_cutting_points(trails_dict, roads_gdf, threshold):
     """
+    Build and connect CuttingPoints across trails.
+
+    Parameters
+    ----------
+    trails_dict : dict
+        {Trail: []}, initially empty lists.
+    roads_gdf : GeoDataFrame
+        Road network used to attach CuttingPoints.
+    threshold : float
+        Distance threshold for inter-trail connections.
+
+    Returns
+    -------
+    all_cutting_points : list
+        List of all CuttingPoint instances.
+    """
+
     all_cutting_points = set()
 
-    # 1. Create and connect cutting points
+    # 1. Create cutting points for each trail (endpoints + connections to neighbors)
     for trail in trails_dict.keys():
         create_cutting_points(trail, roads_gdf, trails_dict, all_cutting_points, threshold)
 
@@ -35,8 +44,19 @@ def initialize_cutting_points(trails_dict, roads_gdf, threshold):
     for trail in trails_dict.keys():
         order_cutting_points_along_trail(trail, trails_dict)
 
-    logger.debug(f"Total cutting points created: {sum(len(cps) for cps in trails_dict.values())}")
-    return trails_dict
+    # 3. Connect consecutive cutting points on each trail (intra-trail)
+    for trail, cps in trails_dict.items():
+        for i in range(len(cps) - 1):
+            cp1, cp2 = cps[i], cps[i + 1]
+            cp1.dict_neighbors[cp2].append(trail)
+            cp2.dict_neighbors[cp1].append(trail)
+
+    logger.info(f"Total cutting points created: {len(all_cutting_points)}")
+    return list(all_cutting_points)
+
+
+
+
 
 # ----------------------------- #
 # INTERNAL HELPERS

@@ -49,6 +49,7 @@ def read_and_prepare_layers(original_crs=ORIGINAL_CRS, target_crs=TARGET_CRS):
     """
     Load trails and roads shapefiles, assign and reproject CRS.
     """
+    logging.info("Reading and preparing vector layers")
     trails = (
         gpd.read_file(TRAILS_PATH)
         .set_crs(original_crs, allow_override=True)

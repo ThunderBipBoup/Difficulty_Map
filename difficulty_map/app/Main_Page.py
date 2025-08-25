@@ -21,7 +21,7 @@ configure_logging()
 # --------------------------
 # Load Input Data
 # --------------------------
-trails, roads = pipeline.load_input_data()
+trails, roads = map_utils.read_and_prepare_layers()
 
 from difficulty_map.source.session_utils import init_session_state
 

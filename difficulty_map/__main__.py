@@ -5,7 +5,7 @@ from difficulty_map.logging_config import configure_logging
 configure_logging()
 
 
-trails, roads = load_input_data()
+trails, roads = read_and_prepare_layers()
 
 start_pt = Point(821000,5139000)
 

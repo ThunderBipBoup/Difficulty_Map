@@ -142,7 +142,7 @@ st.title("Study Area Map")
 show_landform = st.checkbox("Show slope (terrain background)")
 
 
-trails, roads = pipeline.load_input_data()
+trails, roads = map_utils.read_and_prepare_layers()
 roads_clip, trails_clip, slope_result = pipeline.study_area_displaying(
     trails, roads, st.session_state.study_area_geom, show_landform
 )
