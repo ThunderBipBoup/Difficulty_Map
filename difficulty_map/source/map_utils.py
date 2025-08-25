@@ -62,6 +62,14 @@ def read_and_prepare_layers(original_crs=ORIGINAL_CRS, target_crs=TARGET_CRS):
     return trails, roads
 
 
+def clip_layers(layers, study_area):
+    """
+    Clip one or more GeoDataFrames to a study area.
+    """
+    return [gpd.clip(layer, study_area) for layer in layers]
+
+
+
 def mask_raster(bbox, src):
     """
     Apply a bounding box mask to a raster and return the masked array and updated metadata.
