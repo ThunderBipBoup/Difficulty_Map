@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from shapely.geometry import box
 
 from difficulty_map.source import map_utils, pipeline
 from difficulty_map.source.session_utils import init_session_state
@@ -57,7 +56,8 @@ if uploaded_file is not None:
         df = pd.read_csv(uploaded_file, sep=",")
         if not all(col in df.columns for col in ["X", "Y"]):
             st.error(
-                "CSV must contain columns named exactly 'X' and 'Y'. The columns separator must be ';'."
+                "CSV must contain columns named exactly 'X' and 'Y'."
+                "The columns separator must be ';'."
             )
             st.stop()
 
@@ -194,12 +194,11 @@ if not st.session_state.confirmed_points.empty:
             fontsize=9,
             color="blue",
             zorder=6,
-            bbox=dict(
-                facecolor="ivory",  
-                alpha=0.8,  
-                edgecolor="none",
-                boxstyle="round,pad=0.2",
-            ),
+            bbox={"facecolor": 'ivory', 
+                  "alpha": 0.8, 
+                  "edgecolor": 'none', 
+                  "boxstyle": 'round,pad=0.2'
+            },
         )
 
     gdf_points.plot(ax=ax, color="blue", marker="o", markersize=50, zorder=5)
@@ -212,7 +211,9 @@ st.pyplot(fig)
 
 
 st.sidebar.text(
-    "For each point, \nTotal difficulty = \n( distance on trails x slope on trails x WEIGHT ON TRAILS ) \n+ \n( distance off trails x slope off trails x WEIGHT OFF TRAILS )"
+    "For each point, \nTotal difficulty = \n( distance on trails x slope on "
+    "trails x WEIGHT ON TRAILS ) \n+ \n( distance off trails x slope off "
+    "trails x WEIGHT OFF TRAILS )"
 )
 w_diff_on_tr = st.sidebar.slider(
     "Weight on trails ",

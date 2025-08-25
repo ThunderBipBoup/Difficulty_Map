@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from shapely.geometry import LineString, Point
+from shapely.geometry import Point
 
 
 class CuttingPoint:
@@ -42,11 +42,11 @@ class CuttingPoint:
         self.total_descent = float("inf")
         self.is_connection_to_road = roads.distance(self.geom).min() < 40
         #TODO: attention au 40, à adapter
-    # def __hash__(self):
-    # return hash((self.geom.x, self.geom.y))
+    def __hash__(self):
+        return hash((self.geom.x, self.geom.y))
 
-    # def __eq__(self, other):
-    # return self.geom.equals(other.geom)
+    def __eq__(self, other):
+        return self.geom.equals(other.geom)
 
     def __lt__(self, other):
         return self.best_diff < other.best_diff

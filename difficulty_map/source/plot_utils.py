@@ -1,18 +1,21 @@
 import logging
-import math
 
-import matplotlib.cm as cm
+from matplotlib import cm
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 from shapely.geometry import LineString
 
-from .roads import create_tab_dist_on_roads
-
 
 def plot_segments_by_difficulty(
-    segments, trails_clip, roads_clip, start_point,
-    gdf_cells=None, process_buffer=False, points=False,
-    gdf_study_points=None,plot_start_point=False
+    segments,
+    trails_clip,
+    roads_clip,
+    start_point,
+    gdf_cells=None,
+    process_buffer=False,
+    points=False,
+    gdf_study_points=None,
+    plot_start_point=False,
 ):
     if not segments:
         logging.error("No segment to display.")
@@ -32,7 +35,7 @@ def plot_segments_by_difficulty(
             markersize=40,
             alpha=0.8,
             vmin=vmin,
-            vmax=vmax
+            vmax=vmax,
         )
 
     # ---------- Segments ----------
@@ -44,7 +47,7 @@ def plot_segments_by_difficulty(
     vmin = min(difficulties)
     vmax = max(difficulties)
     norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
-    cmap = cm.rainbow
+    cmap = cm.get_cmap("rainbow")    
 
     for seg in segments:
         line: LineString = seg["geometry"]
@@ -55,7 +58,7 @@ def plot_segments_by_difficulty(
             ax.plot(x, y, color=color, linewidth=2, alpha=0.2)
             ax.plot(x, y, color=color, linewidth=2)
         else:
-            logging.warning(f"Segment geometry is not a LineString: {type(line)}")
+            logging.warning("Segment geometry is not a LineString: %s", type(line))
 
     sm = cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
@@ -69,7 +72,8 @@ def plot_segments_by_difficulty(
     # ---------- Graph points ----------
     """if points:
         tab_dist_on_roads = create_tab_dist_on_roads(graph)
-        dist_roads_norm = mcolors.Normalize(vmin=min(tab_dist_on_roads), vmax=max(tab_dist_on_roads))
+        dist_roads_norm = mcolors.Normalize(vmin=min(tab_dist_on_roads), 
+            vmax=max(tab_dist_on_roads))
         dist_roads_cmap = cm.get_cmap('plasma')
 
         for cp in graph.nodes:
@@ -86,7 +90,6 @@ def plot_segments_by_difficulty(
         else:
             vmin = gdf_study_points["diff"].min()
             vmax = gdf_study_points["diff"].max()
-            sp_norm = mcolors.Normalize(vmin=vmin, vmax=vmax)
             sp_cmap = cm.get_cmap("rainbow")
 
             gdf_study_points.plot(
@@ -94,15 +97,14 @@ def plot_segments_by_difficulty(
                 column="diff",
                 cmap=sp_cmap,
                 markersize=80,
-                label='Distance driven on road',
-                marker='o',
+                label="Distance driven on road",
+                marker="o",
                 linewidth=0.5,
-                zorder=10
+                zorder=10,
             )
 
-    
     if plot_start_point:
-        ax.plot(start_point.x, start_point.y, 'rX', label="Start Point")
+        ax.plot(start_point.x, start_point.y, "rX", label="Start Point")
     else:
         logging.info("Start point is outside of the study area.")
 

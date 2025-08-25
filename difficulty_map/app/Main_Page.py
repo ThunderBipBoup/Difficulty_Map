@@ -15,6 +15,7 @@ from shapely.geometry import LineString, Point, box
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 from difficulty_map.logging_config import configure_logging
 from difficulty_map.source import map_utils, pipeline, plot_utils
+from difficulty_map.source.session_utils import init_session_state
 
 configure_logging()
 
@@ -23,7 +24,7 @@ configure_logging()
 # --------------------------
 trails, roads = map_utils.read_and_prepare_layers()
 
-from difficulty_map.source.session_utils import init_session_state
+
 
 if "has_initialized" not in st.session_state:
     init_session_state()
@@ -36,26 +37,48 @@ if "has_initialized" not in st.session_state:
 st.title("Select a Study Area")
 
 if st.button("Reset all"):
-    for key in ["side", "x_box", "y_box","x_start_pt","y_start_pt","start_point","start_point_user, study_area_geom"]:
+    for key in [
+        "side",
+        "x_box",
+        "y_box",
+        "x_start_pt",
+        "y_start_pt",
+        "start_point",
+        "start_point_user, study_area_geom",
+    ]:
         if key in st.session_state:
             st.session_state.pop(key)
     init_session_state()
-    
+
 # Study area size
-side = st.sidebar.slider("Study area side (m)", min_value=1000, max_value=5000, value=st.session_state.side, step=500)
+side = st.sidebar.slider(
+    "Study area side (m)",
+    min_value=1000,
+    max_value=5000,
+    value=st.session_state.side,
+    step=500,
+)
 st.session_state.side = side
 half_side = side / 2
 
 # Study area center
-x_box = st.sidebar.number_input("Study area center X", value=st.session_state.x_box, step=100)
-y_box = st.sidebar.number_input("Study area center Y", value=st.session_state.y_box, step=100)
+x_box = st.sidebar.number_input(
+    "Study area center X", value=st.session_state.x_box, step=100
+)
+y_box = st.sidebar.number_input(
+    "Study area center Y", value=st.session_state.y_box, step=100
+)
 st.session_state.x_box = x_box
 st.session_state.y_box = y_box
 
 
 # Starting point
-x_start_pt = st.sidebar.number_input("Starting point X", value=st.session_state.x_start_pt, step=50)
-y_start_pt = st.sidebar.number_input("Starting point Y", value=st.session_state.y_start_pt, step=50)
+x_start_pt = st.sidebar.number_input(
+    "Starting point X", value=st.session_state.x_start_pt, step=50
+)
+y_start_pt = st.sidebar.number_input(
+    "Starting point Y", value=st.session_state.y_start_pt, step=50
+)
 st.session_state.x_start_pt = x_start_pt
 st.session_state.y_start_pt = y_start_pt
 
@@ -71,18 +94,26 @@ st.session_state["start_point_user"] = user_point
 st.session_state["start_point"] = projected_point  # projected on road
 
 
-
 # Trail connection threshold
-threshold = st.sidebar.number_input("Trail connection threshold (m)", min_value=0, max_value=1000, value=st.session_state.threshold_btw_cp, step=5)
+threshold = st.sidebar.number_input(
+    "Trail connection threshold (m)",
+    min_value=0,
+    max_value=1000,
+    value=st.session_state.threshold_btw_cp,
+    step=5,
+)
 st.session_state.threshold_btw_cp = threshold
-
 
 
 # --------------------------
 # Geometry & Start Point Update
 # --------------------------
-study_area_box = box(x_box - half_side, y_box - half_side, x_box + half_side, y_box + half_side)
-st.session_state.study_area_geom = gpd.GeoDataFrame(geometry=[study_area_box], crs=map_utils.TARGET_CRS)
+study_area_box = box(
+    x_box - half_side, y_box - half_side, x_box + half_side, y_box + half_side
+)
+st.session_state.study_area_geom = gpd.GeoDataFrame(
+    geometry=[study_area_box], crs=map_utils.TARGET_CRS
+)
 
 # --------------------------
 # Map Display
@@ -97,16 +128,17 @@ user_pt = st.session_state.get("start_point_user", None)
 proj_pt = st.session_state.get("start_point", None)
 
 if user_pt and proj_pt:
-    ax.plot(*user_pt.xy, 'k*', label="User Starting Point")
-    ax.plot(*proj_pt.xy, 'rX', label="Projected on Road")
+    ax.plot(*user_pt.xy, "k*", label="User Starting Point")
+    ax.plot(*proj_pt.xy, "rX", label="Projected on Road")
 
     # Add line between them
     line = LineString([user_pt, proj_pt])
-    ax.plot(*line.xy, 'k--', linewidth=1, label="Projection Line")
+    ax.plot(*line.xy, "k--", linewidth=1, label="Projection Line")
 
 ax.legend()
 ax.set_title("Study Area")
 st.pyplot(fig)
+
 
 # --------------------------
 # Export ZIP Helper
@@ -120,6 +152,7 @@ def zip_export_folder(folder_path):
     zip_buffer.seek(0)
     return zip_buffer
 
+
 # --------------------------
 # Buffer toggle
 # --------------------------
@@ -128,23 +161,37 @@ process_buffer = st.checkbox("Enable Buffer", value=st.session_state.process_buf
 st.session_state.process_buffer = process_buffer
 
 if process_buffer:
-    buffer_width = st.number_input("Buffer width (m)", min_value=0, max_value=5000, value=st.session_state.buffer_width, step=10)
-    cell_size = st.number_input("Cell size (m)", min_value=1, max_value=1000, value=st.session_state.cell_size, step=10)
+    buffer_width = st.number_input(
+        "Buffer width (m)",
+        min_value=0,
+        max_value=5000,
+        value=st.session_state.buffer_width,
+        step=10,
+    )
+    cell_size = st.number_input(
+        "Cell size (m)",
+        min_value=1,
+        max_value=1000,
+        value=st.session_state.cell_size,
+        step=10,
+    )
     st.session_state.buffer_width = buffer_width
     st.session_state.cell_size = cell_size
 else:
     buffer_width = None
     cell_size = None
 
+
 # --------------------------
 # Plot Wrapper for Segments
 # --------------------------
 def plot_segments_streamlit(*args, **kwargs):
-    fig, ax = plot_utils.plot_segments_by_difficulty(*args, **kwargs)
+    fig, _ = plot_utils.plot_segments_by_difficulty(*args, **kwargs)
     if fig is None:
         st.warning("Unable to generate the figure.")
     else:
         st.pyplot(fig)
+
 
 # --------------------------
 # Launch Analysis
@@ -158,35 +205,63 @@ if st.button("Confirm Study Area and Starting Point"):
 
     if params_key not in st.session_state.analysis_cache:
         with st.spinner("Running analysis..."):
-            segments, trails_clip, roads_clip, gdf_cells, result = pipeline.run_difficulty_analysis(
-                trails, roads, study_area_box, st.session_state.start_point,
-                process_buffer, buffer_width, cell_size,
-                st.session_state.threshold_btw_cp
+            segments, trails_clip, roads_clip, gdf_cells, result = (
+                pipeline.run_difficulty_analysis(
+                    trails,
+                    roads,
+                    study_area_box,
+                    st.session_state.start_point,
+                    process_buffer,
+                    buffer_width,
+                    cell_size,
+                    st.session_state.threshold_btw_cp,
+                )
             )
-            st.session_state.analysis_cache[params_key] = (segments, trails_clip, roads_clip, gdf_cells, result)
+            st.session_state.analysis_cache[params_key] = (
+                segments,
+                trails_clip,
+                roads_clip,
+                gdf_cells,
+                result,
+            )
             st.session_state["last_params_key"] = params_key
             st.success("Analysis complete.")
     else:
-        segments,trails_clip, roads_clip, gdf_cells, result = st.session_state.analysis_cache[params_key]
+        segments, trails_clip, roads_clip, gdf_cells, result = (
+            st.session_state.analysis_cache[params_key]
+        )
         st.info("Loaded from cache.")
-    if "confirmed_points" not in st.session_state or st.session_state.confirmed_points.empty :
+    if (
+        "confirmed_points" not in st.session_state
+        or st.session_state.confirmed_points.empty
+    ):
         logging.info("No confirmed points")
-    else : 
+    else:
         confirmed_df = st.session_state.confirmed_points
         study_points = gpd.points_from_xy(confirmed_df["X"], confirmed_df["Y"])
-        
+
         st.session_state.study_points_results = pipeline.analyze_study_points(
             study_points=study_points,
             segments=segments,
-            w_diff_on_tr=st.session_state.w_diff_on_tr, 
-            w_diff_off_tr=st.session_state.w_diff_off_tr
-    )
+            w_diff_on_tr=st.session_state.w_diff_on_tr,
+            w_diff_off_tr=st.session_state.w_diff_off_tr,
+        )
 
     # Display results
-    plot_start_point = st.session_state.study_area_geom.contains(st.session_state.start_point).values[0]
+    plot_start_point = st.session_state.study_area_geom.contains(
+        st.session_state.start_point
+    ).values[0]
 
-    plot_segments_streamlit(segments, trails_clip, roads_clip, st.session_state.start_point, gdf_cells, process_buffer,
-                            gdf_study_points=st.session_state.study_points_results, plot_start_point= plot_start_point)
+    plot_segments_streamlit(
+        segments,
+        trails_clip,
+        roads_clip,
+        st.session_state.start_point,
+        gdf_cells,
+        process_buffer,
+        gdf_study_points=st.session_state.study_points_results,
+        plot_start_point=plot_start_point,
+    )
 
     # Export
     if segments is not None:
@@ -196,5 +271,5 @@ if st.button("Confirm Study Area and Starting Point"):
             label="Download Results (.zip)",
             data=zip_data,
             file_name="difficulty_results.zip",
-            mime="application/zip"
+            mime="application/zip",
         )

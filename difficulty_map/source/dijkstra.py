@@ -4,7 +4,7 @@ import time
 import numpy as np
 from shapely.geometry import LineString
 
-from .roads import dist_on_road
+from difficulty_map.source.roads import dist_on_road
 
 # ===================================================== #
 #   DISTANCE & GEOMETRY UTILITIES
@@ -50,6 +50,7 @@ def sample_valid_raster_values(segment, src, n_points):
 #   INITIALIZATION
 # ===================================================== #
 
+
 def initialize_queue(starting_cps, roads, start_point):
     """
     Initialize the priority queue (min-heap) for Dijkstra's algorithm.
@@ -63,13 +64,14 @@ def initialize_queue(starting_cps, roads, start_point):
         cp.total_elev_gain = 0
         cp.total_descent = 0
         cp.dist_on_roads = dist_on_road(roads, cp, start_point)
-        heapq.heappush(queue, (cp.best_diff, cp))
+        heapq.heappush(queue, cp)
     return queue
 
 
 # ===================================================== #
 #   CORE PROPAGATION LOGIC
 # ===================================================== #
+
 
 def compute_difficulty_between_points(src, cp, neighbor_cp, trail, n_points=50):
     """
@@ -112,11 +114,9 @@ def compute_difficulty_between_points(src, cp, neighbor_cp, trail, n_points=50):
     while current_dist < max_dist:
         next_dist = min(current_dist + dist_step, max_dist)
         segment = build_segment(trail, current_dist, next_dist)
-        segments.append({
-            "geometry": segment,
-            "start_dist": current_dist,
-            "end_dist": next_dist
-        })
+        segments.append(
+            {"geometry": segment, "start_dist": current_dist, "end_dist": next_dist}
+        )
         current_dist = next_dist
 
     # Determine direction of traversal
@@ -162,26 +162,35 @@ def compute_difficulty_between_points(src, cp, neighbor_cp, trail, n_points=50):
         dist_key = seg["start_dist"] if direction == 1 else seg["end_dist"]
 
         # Store segment metrics
-        results.append({
-            "geometry": seg["geometry"],
-            "seg_diff": seg_diff,                    # Difficulty for this segment
-            "total_diff": total_diff,                # Cumulative difficulty
-            "posit_seg": dist_key,                   # Position key along trail
-            "dist_road": cp.dist_on_roads,           # Road distance up to entry
-            "trail_id": trail.id,
-            "start_cp": cp,
-            "end_cp": neighbor_cp,
-            "segment_length": segment_length,
-            "total_dist": total_dist,
-            "elevation_gain": elevation_gain,
-            "total_elev_gain": total_elev_gain,
-            "descent": descent,
-            "total_descent": total_descent
-        })
+        results.append(
+            {
+                "geometry": seg["geometry"],
+                "seg_diff": seg_diff,  # Difficulty for this segment
+                "total_diff": total_diff,  # Cumulative difficulty
+                "posit_seg": dist_key,  # Position key along trail
+                "dist_road": cp.dist_on_roads,  # Road distance up to entry
+                "trail_id": trail.id,
+                "start_cp": cp,
+                "end_cp": neighbor_cp,
+                "segment_length": segment_length,
+                "total_dist": total_dist,
+                "elevation_gain": elevation_gain,
+                "total_elev_gain": total_elev_gain,
+                "descent": descent,
+                "total_descent": total_descent,
+            }
+        )
 
         difficulty_at_distances[dist_key] = total_diff
 
-    return results, difficulty_at_distances, total_diff, direction, total_dist, total_elev_gain, total_descent
+    return (
+        results,
+        difficulty_at_distances,
+        total_diff,
+        total_dist,
+        total_elev_gain,
+        total_descent,
+    )
 
 
 def remove_segments_between(all_segments, trail_id, cp1, cp2):
@@ -190,11 +199,14 @@ def remove_segments_between(all_segments, trail_id, cp1, cp2):
     from a list of segments.
     """
     return [
-        seg for seg in all_segments
+        seg
+        for seg in all_segments
         if not (
-            seg["trail_id"] == trail_id and
-            ((seg["start_cp"] == cp1 and seg["end_cp"] == cp2) or
-             (seg["start_cp"] == cp2 and seg["end_cp"] == cp1))
+            seg["trail_id"] == trail_id
+            and (
+                (seg["start_cp"] == cp1 and seg["end_cp"] == cp2)
+                or (seg["start_cp"] == cp2 and seg["end_cp"] == cp1)
+            )
         )
     ]
 
@@ -206,9 +218,14 @@ def process_neighbors(cp, queue, src, all_segments_dijk, trail_difficulty_by_dis
     """
     for neighbor_cp, trail_list in cp.dict_neighbors.items():
         for trail in trail_list:
-            segments, diff_map, final_diff, direction, total_dist, total_elev_gain, total_descent = compute_difficulty_between_points(
-                src, cp, neighbor_cp, trail
-            )
+            (
+                segments,
+                diff_map,
+                final_diff,
+                total_dist,
+                total_elev_gain,
+                total_descent,
+            ) = compute_difficulty_between_points(src, cp, neighbor_cp, trail)
 
             if neighbor_cp.best_diff >= final_diff:
                 # Found a better path to neighbor_cp
@@ -224,8 +241,8 @@ def process_neighbors(cp, queue, src, all_segments_dijk, trail_difficulty_by_dis
 
             else:
                 # Check reverse direction if forward is worse
-                segments_opp, diff_map_opp, final_diff_opp, _, _, _, _ = compute_difficulty_between_points(
-                    src, neighbor_cp, cp, trail
+                segments_opp, diff_map_opp, final_diff_opp, _, _, _ = (
+                    compute_difficulty_between_points(src, neighbor_cp, cp, trail)
                 )
 
                 if final_diff_opp > cp.best_diff:
@@ -233,10 +250,12 @@ def process_neighbors(cp, queue, src, all_segments_dijk, trail_difficulty_by_dis
                         segments, diff_map, segments_opp, diff_map_opp
                     )
                     trail_difficulty_by_distance[trail] = merged_diff_map
-                    all_segments_dijk = remove_segments_between(all_segments_dijk, trail.id, neighbor_cp, cp).copy()
+                    all_segments_dijk = remove_segments_between(
+                        all_segments_dijk, trail.id, neighbor_cp, cp
+                    ).copy()
                     all_segments_dijk.extend(merged_segments)
 
-            heapq.heappush(queue, (neighbor_cp.best_diff, neighbor_cp))
+            heapq.heappush(queue, neighbor_cp)
 
     return all_segments_dijk
 
@@ -263,7 +282,7 @@ def dijkstra(starting_cps, src, roads, start_point):
     start_time = time.time()
 
     while queue:
-        cost, cp = heapq.heappop(queue)
+        cp = heapq.heappop(queue)
 
         if cp in visited:
             continue
@@ -284,8 +303,16 @@ def dijkstra(starting_cps, src, roads, start_point):
         "execution_time_sec": round(total_time, 2),
         "cutting_points_processed": len(list_visited),
         "segments_created": len(all_segments_dijk),
-        "max_difficulty": round(float(np.nanmax(segment_difficulties)), 2) if segment_difficulties.size > 0 else None,
-        "avg_seg_diff": round(float(np.nanmean(segment_difficulties)), 2) if segment_difficulties.size > 0 else None,
+        "max_difficulty": (
+            round(float(np.nanmax(segment_difficulties)), 2)
+            if segment_difficulties.size > 0
+            else None
+        ),
+        "avg_seg_diff": (
+            round(float(np.nanmean(segment_difficulties)), 2)
+            if segment_difficulties.size > 0
+            else None
+        ),
     }
 
     return all_segments_dijk, metrics
@@ -295,7 +322,10 @@ def dijkstra(starting_cps, src, roads, start_point):
 #   MERGE LOGIC
 # ===================================================== #
 
-def merge_segments_and_difficulties(segments_fwd, diff_map_fwd, segments_bwd, diff_map_bwd):
+
+def merge_segments_and_difficulties(
+    segments_fwd, diff_map_fwd, segments_bwd, diff_map_bwd
+):
     """
     Merge two sets of segments and difficulty maps (forward and backward traversal).
 
@@ -312,8 +342,8 @@ def merge_segments_and_difficulties(segments_fwd, diff_map_fwd, segments_bwd, di
     seg_bwd_by_dist = {seg["posit_seg"]: seg for seg in segments_bwd}
 
     for d in all_distances:
-        val_fwd = diff_map_fwd.get(d, float('inf'))
-        val_bwd = diff_map_bwd.get(d, float('inf'))
+        val_fwd = diff_map_fwd.get(d, float("inf"))
+        val_bwd = diff_map_bwd.get(d, float("inf"))
 
         if val_fwd <= val_bwd:
             merged_diff_map[d] = val_fwd
@@ -326,43 +356,3 @@ def merge_segments_and_difficulties(segments_fwd, diff_map_fwd, segments_bwd, di
             merged_segments.append(seg)
 
     return merged_segments, merged_diff_map
-
-# UNUSED
-
-def compute_start_end_distances(trail, start_cp, end_cp, direction):
-    """
-    [⚠️ Unused function - kept for traceability]
-
-    Compute the distances along a trail geometry between two cutting points.
-    Adjusts direction if start is after end.
-
-    Parameters
-    ----------
-    trail : Trail
-        The trail containing the geometry (LineString).
-    start_cp : CuttingPoint
-        Starting cutting point.
-    end_cp : CuttingPoint
-        Ending cutting point.
-    direction : int
-        Travel direction (+1 forward, -1 backward).
-
-    Returns
-    -------
-    start_dist, end_dist, direction : float, float, int
-    """
-    start_dist = trail.geom.project(start_cp.geom)
-    end_dist = trail.geom.project(end_cp.geom)
-    if start_dist > end_dist:
-        direction = -1
-    return start_dist, end_dist, direction
-
-
-def compute_next_distance(current, end, step, direction):
-    """
-    [⚠️ Unused function - kept for traceability]
-
-    Compute the next distance along a trail given the direction.
-    """
-    next_dist = current + step
-    return min(next_dist, end) if direction == 1 else max(next_dist, end)
