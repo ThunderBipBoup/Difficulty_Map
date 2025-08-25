@@ -1,9 +1,8 @@
-# difficulty_map/source/roads.py
-
 import logging
-from shapely.geometry import LineString, Point
-import geopandas as gpd
 import math
+
+import geopandas as gpd
+from shapely.geometry import LineString, Point
 
 logger = logging.getLogger(__name__)
 """

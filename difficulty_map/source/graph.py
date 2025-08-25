@@ -1,6 +1,9 @@
-from shapely.geometry import Point
-from .classes import Graph, Trail
 import logging
+
+from shapely.geometry import Point
+
+from .classes import Graph
+
 
 def build_graph_from_trails(trails_dict, raster_src=None):
     """

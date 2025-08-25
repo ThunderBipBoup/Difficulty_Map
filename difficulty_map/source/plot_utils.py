@@ -1,14 +1,16 @@
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-import matplotlib.colors as mcolors
-from shapely.geometry import LineString
-import numpy as np
 import logging
-from .roads import create_tab_dist_on_roads
 import math
 
+import matplotlib.cm as cm
+import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
+from shapely.geometry import LineString
+
+from .roads import create_tab_dist_on_roads
+
+
 def plot_segments_by_difficulty(
-    segments, graph, trails_clip, roads_clip, start_point,
+    segments, trails_clip, roads_clip, start_point,
     gdf_cells=None, process_buffer=False, points=False,
     gdf_study_points=None,plot_start_point=False
 ):
@@ -65,7 +67,7 @@ def plot_segments_by_difficulty(
     roads_clip.plot(ax=ax, color="pink", linewidth=4)
 
     # ---------- Graph points ----------
-    if points:
+    """if points:
         tab_dist_on_roads = create_tab_dist_on_roads(graph)
         dist_roads_norm = mcolors.Normalize(vmin=min(tab_dist_on_roads), vmax=max(tab_dist_on_roads))
         dist_roads_cmap = cm.get_cmap('plasma')
@@ -75,7 +77,7 @@ def plot_segments_by_difficulty(
                 color = dist_roads_cmap(dist_roads_norm(cp.dist_on_roads))
                 ax.plot(cp.geom.x, cp.geom.y, color=color, marker='o')
             else:
-                ax.plot(cp.geom.x, cp.geom.y, 'ko')
+                ax.plot(cp.geom.x, cp.geom.y, 'ko')"""
 
     # ---------- Study points ----------
     if gdf_study_points is not None and not gdf_study_points.empty:

@@ -1,6 +1,6 @@
-from shapely.geometry import LineString
 from collections import defaultdict
-from shapely.geometry import Point
+
+from shapely.geometry import LineString, Point
 
 
 class CuttingPoint:
@@ -103,60 +103,3 @@ class Trail:
 
     def __hash__(self):
         return hash(self.id)
-
-
-from dataclasses import dataclass
-from shapely.geometry import LineString
-from typing import Any
-
-@dataclass
-class SegmentResult:
-    """
-    Represents the difficulty analysis for a segment of a trail between two cutting points.
-
-    Attributes
-    ----------
-    geometry : LineString
-        The geometry of the trail segment.
-    segment_difficulty : float
-        Difficulty score of the segment, which combines distance traveled
-        and elevation changes (ascents increase difficulty, descents decrease it).
-    total_difficulty : float
-        Cumulative difficulty from the starting cutting point to the end of this segment.
-    position_along_trail : float
-        Position of this segment along the trail (used as a key for ordering).
-    dist_on_roads : float
-        Distance traveled on roads before entering the trails to reach this segment.
-    trail_id : int
-        Identifier of the trail this segment belongs to.
-    start_cp : Any
-        Starting cutting point object.
-    end_cp : Any
-        Ending cutting point object.
-    segment_length : float
-        Length of the segment in map units.
-    total_dist : float
-        Cumulative trail distance from start up to this segment.
-    elevation_gain : float
-        Elevation gain only for this segment.
-    total_elev_gain : float
-        Cumulative elevation gain up to this segment.
-    descent : float
-        Elevation loss only for this segment.
-    total_descent : float
-        Cumulative elevation loss up to this segment.
-    """
-    geometry: LineString
-    segment_difficulty: float
-    total_difficulty: float
-    position_along_trail: float
-    dist_on_roads: float
-    trail_id: int
-    start_cp: Any
-    end_cp: Any
-    segment_length: float
-    total_dist: float
-    elevation_gain: float
-    total_elev_gain: float
-    descent: float
-    total_descent: float

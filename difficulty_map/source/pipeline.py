@@ -1,20 +1,20 @@
 
 import logging
 import os
-import geopandas as gpd
 
-from shapely.geometry import Point, LineString
+import geopandas as gpd
 from rasterio.mask import mask
 from rasterio.plot import plotting_extent
+from shapely.geometry import LineString, Point
 
-from .cutting_points import *
-from .plot_utils import *
-from .classes import *
-from .graph import *
-from .dijkstra import *
-from .roads import *
 from .buffer import *
+from .classes import *
+from .cutting_points import *
+from .dijkstra import *
+from .graph import *
 from .map_utils import *
+from .plot_utils import *
+from .roads import *
 
 
 # la fonction inutile
@@ -86,7 +86,7 @@ def run_difficulty_analysis(trails, roads, small_box, start_pt, process_buffer, 
     print(f" Number of edges: {len(graph.edges)}")
 
 
-    segments, visited_cps, metrics = dijkstra(graph, starting_points, src,roads,start_pt)
+    segments, visited_cps, metrics = dijkstra( starting_points, src,roads,start_pt)
             
     # -----------------------------
     # 4. Export results
@@ -134,14 +134,13 @@ def run_difficulty_analysis(trails, roads, small_box, start_pt, process_buffer, 
     for key, value in metrics.items():
         print(f"{key.replace('_', ' ').capitalize()}: {value}")
 
-    return segments, graph, trails_clip, roads_clip, gdf_cells, "OK"
+    return segments, trails_clip, roads_clip, gdf_cells, "OK"
 
 
 
 def study_area_displaying(trails, roads, study_area, show_landform):
     logging.info("Clipping trails and roads to study area")
     roads_clip, trails_clip = clip_layers([roads, trails], study_area)
-
     data, extent = None, None
 
     if show_landform:

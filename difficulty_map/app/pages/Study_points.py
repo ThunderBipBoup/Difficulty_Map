@@ -1,19 +1,20 @@
-import streamlit as st
-import pandas as pd
-import geopandas as gpd
-import matplotlib.pyplot as plt
-import numpy as np
-from shapely.geometry import box
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-import logging
 import os
 import sys
 
+import geopandas as gpd
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import streamlit as st
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from shapely.geometry import box
+
+from difficulty_map.source import map_utils, pipeline
+from difficulty_map.source.session_utils import init_session_state
+
 # Import project modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-from difficulty_map.source import pipeline, map_utils
 
-from difficulty_map.source.session_utils import init_session_state
 
 if "has_initialized" not in st.session_state:
     init_session_state()
@@ -139,7 +140,7 @@ if submitted:
 
 st.title("Study Area Map")
 show_landform = st.checkbox("Show slope (terrain background)")
-import rasterio
+
 
 trails, roads = pipeline.load_input_data()
 roads_clip, trails_clip, slope_result = pipeline.study_area_displaying(

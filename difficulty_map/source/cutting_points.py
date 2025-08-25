@@ -1,10 +1,11 @@
+import logging
 from collections import defaultdict
 
 import geopandas as gpd
-import logging
-from shapely.geometry import LineString
-from .classes import Trail, CuttingPoint  # Adjust relative import if needed
+
+from .classes import CuttingPoint
 from .map_utils import *
+
 logger = logging.getLogger(__name__)
 
 # ----------------------------- #
