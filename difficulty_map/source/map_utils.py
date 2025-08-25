@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from collections import defaultdict
 
 import geopandas as gpd
 import numpy as np
@@ -7,7 +8,7 @@ import pandas as pd
 from rasterio.mask import mask
 from shapely.geometry import LineString, MultiLineString
 
-from .classes import *
+from difficulty_map.source.classes import Trail
 
 # ----------------------------
 # Global config
@@ -70,7 +71,6 @@ def clip_layers(layers, study_area):
     return [gpd.clip(layer, study_area) for layer in layers]
 
 
-
 def mask_raster(bbox, src):
     """
     Apply a bounding box mask to a raster and return the masked array and updated metadata.
@@ -108,7 +108,7 @@ def decompose_multilines(gdf):
     Split MultiLineStrings into individual LineStrings, assigning unique IDs.
     """
     decomposed = []
-    for idx, row in gdf.iterrows():
+    for _, row in gdf.iterrows():
         geom = row.geometry
         if geom is None or geom.is_empty:
             continue
