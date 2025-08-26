@@ -1,65 +1,70 @@
 import logging
-import math
-
 import geopandas as gpd
+import networkx as nx
 from shapely.geometry import LineString, Point
 
 logger = logging.getLogger(__name__)
 
 
 def dist_on_road(
-    roads_gdf: gpd.GeoDataFrame, cp, road_starting_point: Point = Point(820000, 5139000)
+    roads_gdf: gpd.GeoDataFrame,
+    cp,
+    road_starting_point: Point = Point(820000, 5139000),
 ) -> float:
     """
-    Compute the distance along the nearest road from a given cutting point (cp)
-    to a fixed road starting point, by interpolating the geometry in small steps.
+    Compute the shortest distance along the road network between a cutting point (cp)
+    and a fixed road starting point.
 
     Parameters
     ----------
-        roads_gdf: GeoDataFrame
-            GeoDataFrame of road geometries.
-        cp: CuttingPoint
-            Custom point class with attribute .geom (shapely Point).
-        road_starting_point: Point
-            Starting reference point on the road.
+    roads_gdf : GeoDataFrame
+        GeoDataFrame of road geometries (LineString).
+    cp : CuttingPoint
+        Custom point class with attribute .geom (shapely Point).
+    road_starting_point : Point
+        Starting reference point on the road.
 
     Returns
     -------
-        float: Approximate road distance between cp and road_starting_point.
+    float
+        Shortest path length along the road network between cp and road_starting_point.
     """
     try:
-        # Find closest road geometry
-        distances = roads_gdf.geometry.distance(cp.geom)
-        closest_idx = distances.idxmin()
-        road_geom = roads_gdf.loc[closest_idx].geometry
+        # 1. Build graph from road geometries
+        G = nx.Graph()
+        for idx, road in roads_gdf.iterrows():
+            geom = road.geometry
+            if not isinstance(geom, LineString):
+                continue
+            coords = list(geom.coords)
+            for i in range(len(coords) - 1):
+                p1, p2 = coords[i], coords[i + 1]
+                dist = Point(p1).distance(Point(p2))
+                G.add_edge(p1, p2, weight=dist)
 
-        if not isinstance(road_geom, LineString):
-            logger.warning(
-                "Unexpected geometry type for closest road: %s", type(road_geom)
-            )
+        if G.number_of_edges() == 0:
+            logger.warning("Road graph is empty!")
             return float("inf")
 
-        # Project points onto the road
-        dist_cp = road_geom.project(cp.geom)
-        dist_start_point = road_geom.project(road_starting_point)
+        # 2. Snap cp and starting point to nearest road nodes
+        def snap_to_graph(pt: Point):
+            nearest_node = min(G.nodes, key=lambda n: Point(n).distance(pt))
+            return nearest_node
 
-        min_dist = min(dist_cp, dist_start_point)
-        max_dist = max(dist_cp, dist_start_point)
+        cp_node = snap_to_graph(cp.geom)
+        start_node = snap_to_graph(road_starting_point)
 
-        dist_step = 50  # meters
-        total_dist = 0
-        current_dist = min_dist
-
-        while current_dist < max_dist:
-            next_dist = min(current_dist + dist_step, max_dist)
-            segment = LineString(
-                [road_geom.interpolate(current_dist), road_geom.interpolate(next_dist)]
+        # 3. Compute shortest path length
+        try:
+            length = nx.shortest_path_length(
+                G, source=cp_node, target=start_node, weight="weight"
             )
-            total_dist += segment.length
-            current_dist = next_dist
+        except nx.NetworkXNoPath:
+            logger.warning("No path found between cp and start_point in road network.")
+            return float("inf")
 
-        return total_dist
+        return length
 
     except Exception as e:
-        logger.error("Error in dist_on_road():%s",e)
+        logger.error("Error in dist_on_road(): %s", e)
         return float("inf")
