@@ -11,10 +11,10 @@ logger = logging.getLogger(__name__)
 # ----------------------------- #
 # MAIN LOGIC
 # ----------------------------- #
-# on peut pas remplacer all_cutting_points par une utilisation de dict_cp_on_trails ?
 
 
-def build_cutting_points(trails_dict, roads_gdf, threshold):
+def build_cutting_points(trails_dict, roads_gdf, trails_threshold, 
+                         roads_threshold):
     """
     Build and connect CuttingPoints across trails.
 
@@ -24,9 +24,10 @@ def build_cutting_points(trails_dict, roads_gdf, threshold):
         {Trail: []}, initially empty lists.
     roads_gdf : GeoDataFrame
         Road network used to attach CuttingPoints.
-    threshold : float
+    trails_threshold : float
         Distance threshold for inter-trail connections.
-
+    roads_threshold : float
+        Maximum distance between a trail and a road for them to be considered connected
     Returns
     -------
     all_cutting_points : list
@@ -35,17 +36,16 @@ def build_cutting_points(trails_dict, roads_gdf, threshold):
 
     all_cutting_points = set()
 
-    # 1. Create cutting points for each trail (endpoints + connections to neighbors)
     for trail in trails_dict.keys():
         create_cutting_points(
-            trail, roads_gdf, trails_dict, all_cutting_points, threshold
+            trail, roads_gdf, trails_dict, all_cutting_points, 
+            trails_threshold, roads_threshold
         )
 
-    # 2. Sort cutting points along each trail
     for trail in trails_dict.keys():
         order_cutting_points_along_trail(trail, trails_dict)
 
-    # 3. Connect consecutive cutting points on each trail (intra-trail)
+    # Connect consecutive cutting points on each trail (intra-trail)
     for trail, cps in trails_dict.items():
         for i in range(len(cps) - 1):
             cp1, cp2 = cps[i], cps[i + 1]
@@ -61,26 +61,32 @@ def build_cutting_points(trails_dict, roads_gdf, threshold):
 # ----------------------------- #
 
 
-def create_cutting_points(trail, roads_gdf, trails_dict, all_cutting_points, threshold):
+def create_cutting_points(trail, roads_gdf, trails_dict, all_cutting_points, 
+                          trails_threshold, roads_threshold):
     """
-    For both endpoints of a trail, find/create cutting points and connect to nearby trails.
+    For both endpoints of a trail, find/create cutting points and connect to 
+    nearby trails.
     """
     endpoints = []
     for endpoint in trail.endpoints():
         cp = find_or_create_cutting_point(
-            all_cutting_points, endpoint, trail, trails_dict, roads_gdf
+            all_cutting_points, endpoint, trail, trails_dict, roads_gdf, 
+            roads_threshold
         )
         endpoints.append(cp)
     connect_to_neighbors(
-        trail, all_cutting_points, endpoints, trails_dict, threshold, roads_gdf
+        trail, all_cutting_points, endpoints, trails_dict, trails_threshold, 
+        roads_gdf, roads_threshold
     )
 
 
 def find_or_create_cutting_point(
-    all_cutting_points, point_geom, trail, trails_dict, roads_gdf
+    all_cutting_points, point_geom, trail, trails_dict, roads_gdf,
+    roads_threshold
 ):
     """
-    Reuse an existing cutting point if close enough, otherwise create and register a new one.
+    Reuse an existing cutting point if close enough, otherwise create 
+    and register a new one.
     """
     for cp in all_cutting_points:
         if cp.geom.distance(point_geom) < 0.2:
@@ -88,31 +94,42 @@ def find_or_create_cutting_point(
             return cp  # Reuse existing
 
     # Otherwise create new
-    new_cp = CuttingPoint(geom=point_geom, roads=roads_gdf)
+    new_cp = CuttingPoint(geom=point_geom, roads=roads_gdf, 
+                          roads_threshold=roads_threshold)
     trails_dict[trail].append(new_cp)
     all_cutting_points.add(new_cp)
     return new_cp
 
 
 def connect_to_neighbors(
-    trail, all_cutting_points, endpoints, trails_dict, threshold, roads_gdf
+    trail, all_cutting_points, endpoints, trails_dict, trails_threshold, roads_gdf, 
+    roads_threshold
 ):
     """
-    Search for nearby trails to each endpoint and establish bidirectional neighbor connections
-    via cutting points.
+    Search for nearby trails to each endpoint and establish bidirectional 
+    neighbor connections via cutting points.
 
     Parameters:
-        trail (Trail): The current trail being processed.
-        all_cutting_points (set): Global set of unique CuttingPoint instances.
-        endpoints (list): List of CuttingPoint objects (usually 2, start and end).
-        trails_dict (dict): Dictionary {Trail: list of CuttingPoints}.
-        threshold (float): Maximum distance for neighbor search.
-        roads_gdf (GeoDataFrame): Road network (used when creating new CuttingPoints).
+        trail: Trail
+            The current trail being processed.
+        all_cutting_points: set
+            Global set of unique CuttingPoint instances.
+        endpoints: list
+            List of CuttingPoint objects (usually 2, start and end).
+        trails_dict: dict
+            Dictionary {Trail: list of CuttingPoints}.
+        trails_threshold: float
+            Maximum distance for neighbor search.
+        roads_gdf: GeoDataFrame
+            Road network (used when creating new CuttingPoints).
+        roads_threshold : float
+            Maximum distance between a trail and a road for them to be 
+            considered connected.
     """
-    # Step 1: Filter other trails (exclude the current one)
+    # Exclude the current trail
     other_trails = {t: cps for t, cps in trails_dict.items() if t != trail}
 
-    # Step 2: Create GeoDataFrame for spatial queries
+    # Create GeoDataFrame for spatial queries
     if not other_trails:
         return  # nothing to connect to
 
@@ -124,10 +141,10 @@ def connect_to_neighbors(
         crs=TARGET_CRS,
     )
 
-    # Step 3: For each endpoint, look for nearby trails and create mutual connections
+    # For each endpoint, look for nearby trails and create mutual connections
     for endpoint in endpoints:
         other_gdf["dist"] = other_gdf.geometry.distance(endpoint.geom)
-        nearby = other_gdf[other_gdf["dist"] < threshold]
+        nearby = other_gdf[other_gdf["dist"] < trails_threshold]
 
         for _, row in nearby.iterrows():
             neighbor_trail = row["trail_obj"]
@@ -138,7 +155,8 @@ def connect_to_neighbors(
 
             # Find or create the corresponding CuttingPoint on the neighbor trail
             neighbor_endpoint = find_or_create_cutting_point(
-                all_cutting_points, neighbor_pt, neighbor_trail, trails_dict, roads_gdf
+                all_cutting_points, neighbor_pt, neighbor_trail, trails_dict, roads_gdf, 
+                roads_threshold
             )
 
             # Initialize dict_neighbors if missing

@@ -6,9 +6,9 @@ from shapely.geometry import LineString
 
 from difficulty_map.source.roads import dist_on_road
 
-# ===================================================== #
-#   DISTANCE & GEOMETRY UTILITIES
-# ===================================================== #
+# ----------------------------- #
+# DISTANCE & GEOMETRY UTILITIES
+# ----------------------------- #
 
 
 def build_segment(trail, current_dist, next_dist):
@@ -39,16 +39,34 @@ def sample_valid_raster_values(segment, src, n_points):
         Array of sampled values excluding nodata values.
     """
     distances = np.linspace(0, segment.length, n_points)
-    coords = [(segment.interpolate(d).x, segment.interpolate(d).y) for d in distances]
+    coords = [(segment.interpolate(d).x, segment.interpolate(d).y)
+              for d in distances]
     values = np.array([val[0] for val in src.sample(coords)])
 
     nodata = src.nodata if src.nodata is not None else -9999.0
     return values[values != nodata]
 
 
-# ===================================================== #
-#   INITIALIZATION
-# ===================================================== #
+def remove_segments_between(all_segments, trail_id, cp1, cp2):
+    """
+    Remove segments connecting two cutting points on the same trail
+    from a list of segments.
+    """
+    return [
+        seg
+        for seg in all_segments
+        if not (
+            seg["trail_id"] == trail_id
+            and (
+                (seg["start_cp"] == cp1 and seg["end_cp"] == cp2)
+                or (seg["start_cp"] == cp2 and seg["end_cp"] == cp1)
+            )
+        )
+    ]
+
+# ----------------------------- #
+# INITIALIZATION
+# ----------------------------- #
 
 
 def initialize_queue(starting_cps, roads, start_point):
@@ -68,9 +86,9 @@ def initialize_queue(starting_cps, roads, start_point):
     return queue
 
 
-# ===================================================== #
-#   CORE PROPAGATION LOGIC
-# ===================================================== #
+# ----------------------------- #
+# CORE PROPAGATION LOGIC
+# ----------------------------- #
 
 
 def compute_difficulty_between_points(src, cp, neighbor_cp, trail, n_points=50):
@@ -172,12 +190,12 @@ def compute_difficulty_between_points(src, cp, neighbor_cp, trail, n_points=50):
                 "trail_id": trail.id,
                 "start_cp": cp,
                 "end_cp": neighbor_cp,
-                "segment_length": segment_length,
+                "seg_length": segment_length,
                 "total_dist": total_dist,
-                "elevation_gain": elevation_gain,
-                "total_elev_gain": total_elev_gain,
+                "elev_gain": elevation_gain,
+                "tot_elev": total_elev_gain,  # Cumulative elevation gain
                 "descent": descent,
-                "total_descent": total_descent,
+                "tot_desc": total_descent,  # Cumulative descent
             }
         )
 
@@ -191,24 +209,6 @@ def compute_difficulty_between_points(src, cp, neighbor_cp, trail, n_points=50):
         total_elev_gain,
         total_descent,
     )
-
-
-def remove_segments_between(all_segments, trail_id, cp1, cp2):
-    """
-    Remove segments connecting two cutting points on the same trail
-    from a list of segments.
-    """
-    return [
-        seg
-        for seg in all_segments
-        if not (
-            seg["trail_id"] == trail_id
-            and (
-                (seg["start_cp"] == cp1 and seg["end_cp"] == cp2)
-                or (seg["start_cp"] == cp2 and seg["end_cp"] == cp1)
-            )
-        )
-    ]
 
 
 def process_neighbors(cp, queue, src, all_segments_dijk, trail_difficulty_by_distance):
@@ -242,7 +242,8 @@ def process_neighbors(cp, queue, src, all_segments_dijk, trail_difficulty_by_dis
             else:
                 # Check reverse direction if forward is worse
                 segments_opp, diff_map_opp, final_diff_opp, _, _, _ = (
-                    compute_difficulty_between_points(src, neighbor_cp, cp, trail)
+                    compute_difficulty_between_points(
+                        src, neighbor_cp, cp, trail)
                 )
 
                 if final_diff_opp > cp.best_diff:
@@ -318,9 +319,9 @@ def dijkstra(starting_cps, src, roads, start_point):
     return all_segments_dijk, metrics
 
 
-# ===================================================== #
-#   MERGE LOGIC
-# ===================================================== #
+# ----------------------------- #
+# MERGE LOGIC
+# ----------------------------- #
 
 
 def merge_segments_and_difficulties(

@@ -32,7 +32,7 @@ class CuttingPoint:
 
     """
 
-    def __init__(self, geom, roads):
+    def __init__(self, geom, roads, roads_threshold):
         self.geom = geom
         self.dict_neighbors = defaultdict(list)
         self.dist_on_roads = float("inf")
@@ -40,8 +40,7 @@ class CuttingPoint:
         self.total_dist = float("inf")
         self.total_elev_gain = float("inf")
         self.total_descent = float("inf")
-        self.is_connection_to_road = roads.distance(self.geom).min() < 40
-        #TODO: attention au 40, à adapter
+        self.is_connection_to_road = roads.distance(self.geom).min() < roads_threshold
     def __hash__(self):
         return hash((self.geom.x, self.geom.y))
 

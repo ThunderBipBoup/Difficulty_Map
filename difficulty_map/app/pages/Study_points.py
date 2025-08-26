@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import streamlit as st
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from difficulty_map.source import map_utils, pipeline, plot_utils
 from difficulty_map.source.session_utils import init_session_state
@@ -32,7 +31,7 @@ st.title("Study Points")
 
 # Reset button
 if st.button("Reset all study points"):
-    for key in [
+    for key_cache in [
         "random_points",
         "confirmed_points",
         "study_points_results",
@@ -40,8 +39,8 @@ if st.button("Reset all study points"):
         "w_diff_on_tr",
         "w_diff_off_tr",
     ]:
-        if key in st.session_state:
-            st.session_state.pop(key)
+        if key_cache in st.session_state:
+            st.session_state.pop(key_cache)
     init_session_state()
 
 # File uploader for CSV

@@ -6,7 +6,6 @@ from difficulty_map.source import map_utils
 
 
 def init_session_state():
-    # Load reference data
     trails, _ = map_utils.read_and_prepare_layers()
     xmin, ymin, xmax, ymax = trails.total_bounds
     x_center = int((xmin + xmax) // 2)
@@ -18,7 +17,8 @@ def init_session_state():
         "y_box": y_center,
         "x_start_pt": x_center - 1000,
         "y_start_pt": y_center + 1000,
-        "threshold_btw_cp": 50,
+        "tr_threshold": 50,
+        "ro_threshold": 40,
         "process_buffer": False,
         "buffer_width": 60,
         "cell_size": 20,

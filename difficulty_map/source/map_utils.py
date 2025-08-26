@@ -13,12 +13,13 @@ from shapely.geometry import LineString, MultiLineString
 
 from difficulty_map.source.classes import Trail
 
-# ----------------------------
+# ----------------------------- #
 # Global config
-# ----------------------------
+# ----------------------------- #
+
+# Default country setting (can be switched to "fr")
 COUNTRY = "it"
 
-logger = logging.getLogger(__name__)
 # ----------------------------- #
 # PATH SETUP
 # ----------------------------- #
@@ -47,10 +48,23 @@ elif COUNTRY == "fr":
 # DATA LOADING AND PREPARATION
 # ----------------------------- #
 
+logger = logging.getLogger(__name__)
 
 def read_and_prepare_layers(original_crs=ORIGINAL_CRS, target_crs=TARGET_CRS):
     """
-    Load trails and roads shapefiles, assign and reproject CRS.
+    Load and reproject trail and road vector layers.
+
+    Parameters
+    ----------
+        original_crs: str 
+            The CRS of the raw shapefiles.
+        target_crs: str
+            The target CRS for analysis.
+
+    Returns
+    -------
+        tuple: (GeoDataFrame, GeoDataFrame) 
+            Representing trails and roads.
     """
     logging.info("Reading and preparing vector layers")
     trails = (
@@ -64,8 +78,23 @@ def read_and_prepare_layers(original_crs=ORIGINAL_CRS, target_crs=TARGET_CRS):
         .to_crs(target_crs)
     )
     return trails, roads
-    
+
+
 def show_landform_utils(study_area):
+    """
+    Crop the slope raster to the study area and prepare data for plotting.
+
+    Parameters
+    ----------
+        study_area: GeoDataFrame
+        Polygon geometry defining the study area.
+
+    Returns
+    -------
+        tuple:
+            - np.ndarray: Cropped raster data with NaNs for nodata values.
+            - list: [xmin, xmax, ymin, ymax] extent for plotting.
+    """
     bbox_geojson = [study_area.geometry.iloc[0].__geo_interface__]
     with rasterio.open(RASTER_PATH) as src:
         out_image, out_transform = rio_mask(src, bbox_geojson, crop=True)
@@ -76,18 +105,43 @@ def show_landform_utils(study_area):
         extent = [xmin, xmax, ymin, ymax]
         logging.info("Slope raster prepared with shape %s", data.shape)
         return data, extent
-        
-        
+
+
 def clip_layers(layers, study_area):
     """
     Clip one or more GeoDataFrames to a study area.
+
+    Parameters
+    ----------
+        layers: list
+            List of GeoDataFrames.
+        study_area: GeoDataFrame
+            Polygon geometry to clip to.
+
+    Returns
+    -------
+        list: 
+            List of clipped GeoDataFrames.
     """
     return [gpd.clip(layer, study_area) for layer in layers]
 
 
 def mask_raster(bbox, src):
     """
-    Apply a bounding box mask to a raster and return the masked array and updated metadata.
+    Mask a raster using a bounding box polygon.
+
+    Parameters
+    ----------
+        bbox: shapely.geometry.Polygon
+            Bounding box polygon.
+        src: rasterio.io.DatasetReader
+            Open raster dataset.
+
+    Returns
+    -------
+        tuple:
+            - np.ndarray: Masked raster data (nodata replaced with NaN).
+            - dict: Updated raster metadata.
     """
     out_image, out_transform = mask(src, [bbox.__geo_interface__], crop=True)
     out_meta = src.meta.copy()
@@ -102,15 +156,23 @@ def mask_raster(bbox, src):
     data = np.where(data == -9999.0, np.nan, data)
     return data, out_meta
 
-
 # ----------------------------- #
 # TRAIL GEOMETRY PROCESSING
 # ----------------------------- #
 
-
 def add_id_column(gdf):
     """
     Add a unique 'id' column to a GeoDataFrame.
+
+    Parameters
+    ----------
+        gdf: GeoDataFrame
+            Input GeoDataFrame.
+
+    Returns
+    -------
+        GeoDataFrame: 
+            Copy of input with 'id' column added.
     """
     gdf = gdf.copy()
     gdf["id"] = gdf.index
@@ -119,7 +181,19 @@ def add_id_column(gdf):
 
 def decompose_multilines(gdf):
     """
-    Split MultiLineStrings into individual LineStrings, assigning unique IDs.
+    Convert MultiLineStrings into individual LineStrings.
+
+    Each segment is assigned a unique ID.
+
+    Parameters
+    ----------
+        gdf: GeoDataFrame
+            Input GeoDataFrame with LineString or MultiLineString geometries.
+
+    Returns
+    -------
+        GeoDataFrame: 
+            New GeoDataFrame with only LineString geometries.
     """
     decomposed = []
     for _, row in gdf.iterrows():
@@ -141,6 +215,19 @@ def decompose_multilines(gdf):
 
 
 def create_trails_dict(trails_gdf):
+    """
+    Create a dictionary mapping Trail objects to empty lists.
+
+    Parameters
+    ----------
+        trails_gdf: GeoDataFrame
+            GeoDataFrame containing trail geometries.
+
+    Returns
+    -------
+        defaultdict: 
+            Mapping {Trail: []}.
+    """
     dico_trails = defaultdict(list)
     for _, row in trails_gdf.iterrows():
         trail = Trail(id=row["id"], geom=row["geometry"])
@@ -150,14 +237,18 @@ def create_trails_dict(trails_gdf):
 
 def generate_initial_points(bounds, num_points=3):
     """
-    Génère un DataFrame de points aléatoires dans la zone définie par bounds.
+    Generate random points inside a bounding box.
 
-    Args:
-        bounds (tuple): (xmin, ymin, xmax, ymax)
-        num_points (int): nombre de points à générer
+    Parameters
+    ----------
+        bounds: tuple
+            (xmin, ymin, xmax, ymax).
+        num_points (int, optional): Number of points to generate. Defaults to 3.
 
-    Returns:
-        pd.DataFrame: colonnes X, Y, Name
+    Returns
+    -------
+        pd.DataFrame: 
+            DataFrame with columns [Name, X, Y].
     """
     xmin, ymin, xmax, ymax = bounds
     xs = np.random.uniform(xmin, xmax, num_points)

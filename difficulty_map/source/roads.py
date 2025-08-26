@@ -14,12 +14,17 @@ def dist_on_road(
     Compute the distance along the nearest road from a given cutting point (cp)
     to a fixed road starting point, by interpolating the geometry in small steps.
 
-    Parameters:
-        roads_gdf (GeoDataFrame): GeoDataFrame of road geometries.
-        cp (CuttingPoint): Custom point class with attribute .geom (shapely Point).
-        road_starting_point (Point): Starting reference point on the road.
+    Parameters
+    ----------
+        roads_gdf: GeoDataFrame
+            GeoDataFrame of road geometries.
+        cp: CuttingPoint
+            Custom point class with attribute .geom (shapely Point).
+        road_starting_point: Point
+            Starting reference point on the road.
 
-    Returns:
+    Returns
+    -------
         float: Approximate road distance between cp and road_starting_point.
     """
     try:
