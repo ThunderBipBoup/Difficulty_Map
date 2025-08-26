@@ -11,7 +11,7 @@ Python must be installed. Version 3.12.3 of python was used for the development.
 
 Use the provided **run_app.command** (Mac) or **run_app.bat**(Windows) scripts for a click-and-run experience.
 
-![running the app gif](https://github.com/ThunderBipBoup/Difficulty_Map/tree/main/rm_gif/extrait1.gif)
+![running the app gif](rm_gif/extrait1.gif)
 
 ### Features
 
@@ -36,9 +36,13 @@ Use the provided **run_app.command** (Mac) or **run_app.bat**(Windows) scripts f
 
     You can check the box "Show Slope" to verify that your study area is in the slope raster range. Otherwise it won't work.
 
+![select a study area](rm_gif/extrait2.gif)
+
 2. Optionally enable buffer analysis.
 
 3. Confirm study points or import your CSV.
+
+![study points](rm_gif/extrait-3.gif)
 
 4. Adjust weights for difficulty computation.
 
