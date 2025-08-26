@@ -5,6 +5,9 @@ from collections import defaultdict
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+import rasterio
+from rasterio.mask import mask as rio_mask
+from rasterio.plot import plotting_extent
 from rasterio.mask import mask
 from shapely.geometry import LineString, MultiLineString
 
@@ -20,15 +23,14 @@ logger = logging.getLogger(__name__)
 # PATH SETUP
 # ----------------------------- #
 
-
 # Automatically locate the 'data' folder relative to this script
 BASE_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = BASE_DIR.parent  # Go up one level from 'core/'
 
 if COUNTRY == "it":
     DATA_DIR = PROJECT_ROOT / "data" / "italia_test"
-    TRAILS_PATH = DATA_DIR / "SENTIERI.shp"
-    ROADS_PATH = DATA_DIR / "Viabilita_Pubblica.shp"
+    TRAILS_PATH = DATA_DIR / "trails.shp"
+    ROADS_PATH = DATA_DIR / "roads.shp"
     RASTER_PATH = DATA_DIR / "slope_cropped_area.tif"
     ORIGINAL_CRS = "EPSG:3004"
     TARGET_CRS = "EPSG:32632"
@@ -62,8 +64,20 @@ def read_and_prepare_layers(original_crs=ORIGINAL_CRS, target_crs=TARGET_CRS):
         .to_crs(target_crs)
     )
     return trails, roads
-
-
+    
+def show_landform_utils(study_area):
+    bbox_geojson = [study_area.geometry.iloc[0].__geo_interface__]
+    with rasterio.open(RASTER_PATH) as src:
+        out_image, out_transform = rio_mask(src, bbox_geojson, crop=True)
+        data = out_image[0].astype("float32")
+        if src.nodata is not None:
+            data[data == src.nodata] = np.nan
+        xmin, xmax, ymin, ymax = plotting_extent(data, out_transform)
+        extent = [xmin, xmax, ymin, ymax]
+        logging.info("Slope raster prepared with shape %s", data.shape)
+        return data, extent
+        
+        
 def clip_layers(layers, study_area):
     """
     Clip one or more GeoDataFrames to a study area.

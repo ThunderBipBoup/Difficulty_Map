@@ -7,7 +7,9 @@ import zipfile
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import streamlit as st
+import rasterio
 from shapely.geometry import LineString, Point, box
+from rasterio.plot import show
 
 # --------------------------
 # Project Imports and Setup
@@ -24,12 +26,12 @@ configure_logging()
 # --------------------------
 trails, roads = map_utils.read_and_prepare_layers()
 
-
-
+# --------------------------
+# Initialize Session State
+# --------------------------
 if "has_initialized" not in st.session_state:
     init_session_state()
     st.session_state.has_initialized = True
-
 
 # --------------------------
 # UI: Study Area Selection
@@ -71,7 +73,6 @@ y_box = st.sidebar.number_input(
 st.session_state.x_box = x_box
 st.session_state.y_box = y_box
 
-
 # Starting point
 x_start_pt = st.sidebar.number_input(
     "Starting point X", value=st.session_state.x_start_pt, step=50
@@ -82,17 +83,15 @@ y_start_pt = st.sidebar.number_input(
 st.session_state.x_start_pt = x_start_pt
 st.session_state.y_start_pt = y_start_pt
 
-
-# Coordinates from the sidebar
+# User-defined starting point
 user_point = Point(x_start_pt, y_start_pt)
 
-# Projection
+# Snap user point to the nearest road
 projected_point = pipeline.project_point_on_nearest_road(roads, user_point)
 
-# Save both for plotting later
+# Store both in session state for later use
 st.session_state["start_point_user"] = user_point
-st.session_state["start_point"] = projected_point  # projected on road
-
+st.session_state["start_point"] = projected_point
 
 # Trail connection threshold
 threshold = st.sidebar.number_input(
@@ -104,9 +103,11 @@ threshold = st.sidebar.number_input(
 )
 st.session_state.threshold_btw_cp = threshold
 
+# Landform background option
+show_landform = st.checkbox("Show slope (terrain background)")
 
 # --------------------------
-# Geometry & Start Point Update
+# Study Area Geometry
 # --------------------------
 study_area_box = box(
     x_box - half_side, y_box - half_side, x_box + half_side, y_box + half_side
@@ -119,11 +120,16 @@ st.session_state.study_area_geom = gpd.GeoDataFrame(
 # Map Display
 # --------------------------
 fig, ax = plt.subplots(figsize=(10, 10))
+if show_landform:
+    with rasterio.open(map_utils.RASTER_PATH) as src:
+        show(src, ax=ax, cmap="terrain")
+        ax.grid(True, linewidth=0.5, linestyle="--", alpha=0.5)
+
 trails.plot(ax=ax, color="purple", linewidth=0.7, label="Trails")
 roads.plot(ax=ax, color="gold", linewidth=2, label="Public Roads")
 st.session_state.study_area_geom.boundary.plot(ax=ax, color="red")
 
-# Draw line between user and projected point
+# Draw user and projected starting point
 user_pt = st.session_state.get("start_point_user", None)
 proj_pt = st.session_state.get("start_point", None)
 
@@ -131,7 +137,7 @@ if user_pt and proj_pt:
     ax.plot(*user_pt.xy, "k*", label="User Starting Point")
     ax.plot(*proj_pt.xy, "rX", label="Projected on Road")
 
-    # Add line between them
+    # Draw projection line
     line = LineString([user_pt, proj_pt])
     ax.plot(*line.xy, "k--", linewidth=1, label="Projection Line")
 
@@ -139,9 +145,8 @@ ax.legend()
 ax.set_title("Study Area")
 st.pyplot(fig)
 
-
 # --------------------------
-# Export ZIP Helper
+# Export Helper (ZIP)
 # --------------------------
 def zip_export_folder(folder_path):
     zip_buffer = io.BytesIO()
@@ -152,11 +157,9 @@ def zip_export_folder(folder_path):
     zip_buffer.seek(0)
     return zip_buffer
 
-
 # --------------------------
-# Buffer toggle
+# Buffer Settings
 # --------------------------
-
 process_buffer = st.checkbox("Enable Buffer", value=st.session_state.process_buffer)
 st.session_state.process_buffer = process_buffer
 
@@ -181,7 +184,6 @@ else:
     buffer_width = None
     cell_size = None
 
-
 # --------------------------
 # Plot Wrapper for Segments
 # --------------------------
@@ -192,7 +194,6 @@ def plot_segments_streamlit(*args, **kwargs):
     else:
         st.pyplot(fig)
 
-
 # --------------------------
 # Launch Analysis
 # --------------------------
@@ -200,7 +201,7 @@ if st.button("Confirm Study Area and Starting Point"):
     st.success(f"Study area centered at ({x_box}, {y_box}) confirmed.")
     st.success(f"Starting point at ({x_start_pt}, {y_start_pt}) confirmed.")
 
-    # Unique cache key
+    # Unique cache key for parameter combinations
     params_key = f"{x_box}_{y_box}_{x_start_pt}_{y_start_pt}_{side}_{process_buffer}_{buffer_width}_{cell_size}_{threshold}"
 
     if params_key not in st.session_state.analysis_cache:
@@ -217,25 +218,31 @@ if st.button("Confirm Study Area and Starting Point"):
                     st.session_state.threshold_btw_cp,
                 )
             )
+            # Compute slope only once
+            slope_result = map_utils.show_landform_utils(st.session_state.study_area_geom)
+
             st.session_state.analysis_cache[params_key] = (
                 segments,
                 trails_clip,
                 roads_clip,
                 gdf_cells,
                 result,
+                slope_result,
             )
             st.session_state["last_params_key"] = params_key
             st.success("Analysis complete.")
     else:
-        segments, trails_clip, roads_clip, gdf_cells, result = (
+        segments, trails_clip, roads_clip, gdf_cells, result, slope_result = (
             st.session_state.analysis_cache[params_key]
         )
         st.info("Loaded from cache.")
+
+    # Study points analysis
     if (
         "confirmed_points" not in st.session_state
         or st.session_state.confirmed_points.empty
     ):
-        logging.info("No confirmed points")
+        logging.info("No confirmed points.")
     else:
         confirmed_df = st.session_state.confirmed_points
         study_points = gpd.points_from_xy(confirmed_df["X"], confirmed_df["Y"])
@@ -247,7 +254,14 @@ if st.button("Confirm Study Area and Starting Point"):
             w_diff_off_tr=st.session_state.w_diff_off_tr,
         )
 
-    # Display results
+# --------------------------
+# Display Results (always shown if available)
+# --------------------------
+if "last_params_key" in st.session_state:
+    segments, trails_clip, roads_clip, gdf_cells, result, slope_result = (
+        st.session_state.analysis_cache[st.session_state["last_params_key"]]
+    )
+
     plot_start_point = st.session_state.study_area_geom.contains(
         st.session_state.start_point
     ).values[0]
@@ -259,17 +273,18 @@ if st.button("Confirm Study Area and Starting Point"):
         st.session_state.start_point,
         gdf_cells,
         process_buffer,
-        gdf_study_points=st.session_state.study_points_results,
+        slope_result=slope_result,
+        gdf_study_points=st.session_state.get("study_points_results"),
         plot_start_point=plot_start_point,
+        show_landform=show_landform,
     )
 
-    # Export
-    if segments is not None:
-        st.success("Results available for export.")
-        zip_data = zip_export_folder("export")
-        st.download_button(
-            label="Download Results (.zip)",
-            data=zip_data,
-            file_name="difficulty_results.zip",
-            mime="application/zip",
-        )
+    # Export results
+    st.success("Results available for export.")
+    zip_data = zip_export_folder("export")
+    st.download_button(
+        label="Download Results (.zip)",
+        data=zip_data,
+        file_name="difficulty_results.zip",
+        mime="application/zip",
+    )
