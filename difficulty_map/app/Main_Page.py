@@ -46,6 +46,8 @@ if st.button("Reset all"):
         "x_start_pt",
         "y_start_pt",
         "start_point",
+        "tr_threshold",
+        "ro_threshold",
         "start_point_user, study_area_geom",
     ]:
         if key in st.session_state:
@@ -73,6 +75,8 @@ y_box = st.sidebar.number_input(
 st.session_state.x_box = x_box
 st.session_state.y_box = y_box
 
+st.sidebar.divider()
+
 # Starting point
 x_start_pt = st.sidebar.number_input(
     "Starting point X", value=st.session_state.x_start_pt, step=50
@@ -93,15 +97,28 @@ projected_point = pipeline.project_point_on_nearest_road(roads, user_point)
 st.session_state["start_point_user"] = user_point
 st.session_state["start_point"] = projected_point
 
+st.sidebar.divider()
+
 # Trail connection threshold
-threshold = st.sidebar.number_input(
+tr_threshold = st.sidebar.number_input(
     "Trail connection threshold (m)",
     min_value=0,
     max_value=1000,
-    value=st.session_state.threshold_btw_cp,
+    value=st.session_state.tr_threshold,
     step=5,
 )
-st.session_state.threshold_btw_cp = threshold
+st.session_state.tr_threshold = tr_threshold
+
+# Road connection threshold
+ro_threshold = st.sidebar.number_input(
+    "Road connection threshold (m)",
+    min_value=0,
+    max_value=1000,
+    value=st.session_state.ro_threshold,
+    step=5,
+)
+st.session_state.ro_threshold = ro_threshold
+
 
 # Landform background option
 show_landform = st.checkbox("Show slope (terrain background)")
@@ -145,6 +162,7 @@ ax.legend()
 ax.set_title("Study Area")
 st.pyplot(fig)
 
+
 # --------------------------
 # Export Helper (ZIP)
 # --------------------------
@@ -157,10 +175,12 @@ def zip_export_folder(folder_path):
     zip_buffer.seek(0)
     return zip_buffer
 
+
 # --------------------------
 # Buffer Settings
 # --------------------------
-process_buffer = st.checkbox("Enable Buffer", value=st.session_state.process_buffer)
+process_buffer = st.checkbox(
+    "Enable Buffer", value=st.session_state.process_buffer)
 st.session_state.process_buffer = process_buffer
 
 if process_buffer:
@@ -184,6 +204,7 @@ else:
     buffer_width = None
     cell_size = None
 
+
 # --------------------------
 # Plot Wrapper for Segments
 # --------------------------
@@ -194,6 +215,7 @@ def plot_segments_streamlit(*args, **kwargs):
     else:
         st.pyplot(fig)
 
+
 # --------------------------
 # Launch Analysis
 # --------------------------
@@ -202,7 +224,11 @@ if st.button("Confirm Study Area and Starting Point"):
     st.success(f"Starting point at ({x_start_pt}, {y_start_pt}) confirmed.")
 
     # Unique cache key for parameter combinations
-    params_key = f"{x_box}_{y_box}_{x_start_pt}_{y_start_pt}_{side}_{process_buffer}_{buffer_width}_{cell_size}_{threshold}"
+    params_key = (
+    f"{x_box}_{y_box}_{x_start_pt}_{y_start_pt}_"
+    f"{side}_{process_buffer}_{buffer_width}_"
+    f"{cell_size}_{tr_threshold}_{ro_threshold}"
+)
 
     if params_key not in st.session_state.analysis_cache:
         with st.spinner("Running analysis..."):
@@ -215,11 +241,16 @@ if st.button("Confirm Study Area and Starting Point"):
                     process_buffer,
                     buffer_width,
                     cell_size,
-                    st.session_state.threshold_btw_cp,
+                    tr_threshold,
+                    ro_threshold,
+                    st.session_state.w_diff_on_tr,
+                    st.session_state.w_diff_off_tr
                 )
             )
             # Compute slope only once
-            slope_result = map_utils.show_landform_utils(st.session_state.study_area_geom)
+            slope_result = map_utils.show_landform_utils(
+                st.session_state.study_area_geom
+            )
 
             st.session_state.analysis_cache[params_key] = (
                 segments,

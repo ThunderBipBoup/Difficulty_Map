@@ -47,7 +47,7 @@ def generate_buffer_grid(segments, buffer_width, cell_size):
     return mask, transform
 
 
-def analyze_cells(mask, transform, raster_altitude, segments):
+def analyze_cells(mask, transform, raster_altitude, segments, w_diff_on_tr, w_diff_off_tr):
     """
     Analyze raster cells inside the buffer to estimate difficulty.
 
@@ -61,7 +61,12 @@ def analyze_cells(mask, transform, raster_altitude, segments):
         Altitude raster source.
     segments : list of dict
         Each dict must have 'geometry' (LineString) and 'total_diff' (float).
-
+    w_diff_on_tr: float
+        Weight of the difficulty of the path travelled on trail in the calculation
+        of total difficulty.
+    w_diff_off_tr: float
+        Weight of the difficulty of the path travelled off trails in the calculation
+        of total difficulty.
     Returns
     -------
     GeoDataFrame
@@ -77,8 +82,8 @@ def analyze_cells(mask, transform, raster_altitude, segments):
 
         distances = [(s, s["geometry"].distance(point)) for s in segments]
         nearest_seg, dist_to_seg = min(distances, key=lambda x: x[1])
-        #TODO : adapter avec les poids
-        local_difficulty = alt * dist_to_seg * 0.8 + nearest_seg["total_diff"] * 0.2
+
+        local_difficulty = alt * dist_to_seg * w_diff_off_tr + nearest_seg["total_diff"] * w_diff_on_tr
         results.append({"geometry": point, "difficulty": local_difficulty})
 
     return gpd.GeoDataFrame(results, crs=TARGET_CRS)

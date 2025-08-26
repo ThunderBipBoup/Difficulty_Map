@@ -12,9 +12,9 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from difficulty_map.source import map_utils
 
 
-# =========================================================
-# --- BASIC UTILITIES ---
-# =========================================================
+# ----------------------------- #
+# BASIC UTILITIES
+# ----------------------------- #
 def _init_plot(figsize=(8, 8), title: str = "") -> Tuple[plt.Figure, plt.Axes]:
     """Initialize a matplotlib figure and axes with optional title and labels."""
     fig, ax = plt.subplots(figsize=figsize)
@@ -31,7 +31,7 @@ def _plot_roads_and_trails(ax, roads_clip: Optional[gpd.GeoDataFrame], trails_cl
     if trails_clip is not None:
         trails_clip.plot(ax=ax, color="black", linewidth=1, alpha=alpha_tr, zorder=8, label="Trails")
     if roads_clip is not None:
-        roads_clip.plot(ax=ax, color="pink", linewidth=2, zorder=9, label="Public Roads")
+        roads_clip.plot(ax=ax, color="pink", linewidth=3, zorder=9, label="Public Roads")
 
 
 def _plot_confirmed_points(ax, confirmed_points: gpd.GeoDataFrame):
@@ -98,7 +98,7 @@ def _plot_segments(ax, segments: List[dict], cmap_name="rainbow") -> Tuple[mcolo
         color = cmap(norm(diff))
         if isinstance(line, LineString):
             x, y = line.xy
-            ax.plot(x, y, color=color, linewidth=1, alpha=0.8, zorder=10)
+            ax.plot(x, y, color=color, linewidth=2, alpha=0.9, zorder=10)
         else:
             logging.warning("Segment geometry is not a LineString: %s", type(line))
 
@@ -144,9 +144,10 @@ def _plot_study_points(ax, gdf_study_points: gpd.GeoDataFrame):
     )
 
 
-# =========================================================
-# --- MAIN PLOTTING FUNCTIONS ---
-# =========================================================
+# ----------------------------- #
+# MAIN PLOTTING FUNCTIONS
+# ----------------------------- #
+
 def plot_study_area(
     roads_clip: Optional[gpd.GeoDataFrame],
     trails_clip: gpd.GeoDataFrame,
