@@ -5,35 +5,6 @@ import geopandas as gpd
 from shapely.geometry import LineString, Point
 
 logger = logging.getLogger(__name__)
-"""
-def map_of_roads (roads_gdf: gpd.GeoDataFrame, starting_point: Point):
-    distances = roads_gdf.geometry.distance(starting_point.geom)
-    closest_idx = distances.idxmin()
-    road_geom = roads_gdf.loc[closest_idx].geometry
-        
-    if not isinstance(road_geom, LineString):
-            logger.warning(f"Unexpected geometry type for closest road: {type(road_geom)}")
-            return float('inf')
-
-    # Project points onto the road
-    dist_start_point = road_geom.project(starting_point)
-    
-    for road in roads : 
-        coords = list(road.geom.coords)
-        current_dist,max_dist= Point(coords[0]), Point(coords[-1]) #end points of the road
-    
-        while current_dist < max_dist:
-            next_dist = min(current_dist + dist_step, max_dist)
-            segment = LineString([
-                road_geom.interpolate(current_dist),
-                road_geom.interpolate(next_dist)
-                ])
-            total_dist += segment.length
-            current_dist = next_dist
-
-            return total_dist
-    
-    """
 
 
 def dist_on_road(
@@ -87,11 +58,3 @@ def dist_on_road(
     except Exception as e:
         logger.error("Error in dist_on_road():%s",e)
         return float("inf")
-
-
-def create_tab_dist_on_roads(graph):
-    tab_dist_on_roads = []
-    for cp in graph.nodes:
-        if not math.isinf(cp.dist_on_roads):
-            tab_dist_on_roads.append(cp.dist_on_roads)
-    return tab_dist_on_roads

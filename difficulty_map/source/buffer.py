@@ -1,7 +1,3 @@
-"""
-Module providing buffer-based raster grid generation and difficulty analysis
-for trail/road segments.
-"""
 
 import geopandas as gpd
 import rasterio

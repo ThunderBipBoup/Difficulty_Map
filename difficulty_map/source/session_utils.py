@@ -54,11 +54,7 @@ def init_session_state():
     if "analysis_cache" not in st.session_state:
         st.session_state.analysis_cache = {}
 
-    if "study_points_results" not in st.session_state:
-        st.session_state.study_points_results = gpd.GeoDataFrame(
-            columns=["geometry", "difficulty", "dist_road"], crs=map_utils.TARGET_CRS
-        )
     if "random_points" not in st.session_state:
-        st.session_state.confirmed_points = map_utils.generate_initial_points(
+        st.session_state.random_points = map_utils.generate_initial_points(
             st.session_state.study_area_geom.total_bounds, num_points=3
         )

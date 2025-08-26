@@ -1,11 +1,8 @@
 import logging
 import os
 
-import numpy as np
 import geopandas as gpd
 import rasterio
-from rasterio.mask import mask as rio_mask
-from rasterio.plot import plotting_extent
 from shapely.geometry import LineString, Point, box
 
 from difficulty_map.source.buffer import generate_buffer_grid, analyze_cells
@@ -103,23 +100,7 @@ def run_difficulty_analysis(
 # 2. Affichage de l'aire d'étude avec raster
 # -----------------------------------------------------------------------------
 
-def study_area_displaying(trails, roads, study_area, show_landform):
-    """Prépare les données raster + vecteurs pour affichage sur la zone d'étude."""
-    roads_clip, trails_clip = clip_layers([roads, trails], study_area)
-    data, extent = None, None
 
-    if show_landform:
-        bbox_geojson = [study_area.geometry.iloc[0].__geo_interface__]
-        with rasterio.open(RASTER_PATH) as src:
-            out_image, out_transform = rio_mask(src, bbox_geojson, crop=True)
-            data = out_image[0].astype("float32")
-            if src.nodata is not None:
-                data[data == src.nodata] = np.nan
-            xmin, xmax, ymin, ymax = plotting_extent(data, out_transform)
-            extent = [xmin, xmax, ymin, ymax]
-            logging.info("Slope raster prepared with shape %s", data.shape)
-
-    return roads_clip, trails_clip, (data, extent)
 
 
 # -----------------------------------------------------------------------------
