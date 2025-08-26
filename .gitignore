@@ -2,3 +2,4 @@
 **/venv
 **/.venv
 *.log
+**/difficulty_map/tests
