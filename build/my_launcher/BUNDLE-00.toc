@@ -1,3 +1,0 @@
-([('my_launcher',
-   '/Users/emmad/Documents/DifficultyMapv2.5.f/dist/my_launcher',
-   'EXECUTABLE')],)

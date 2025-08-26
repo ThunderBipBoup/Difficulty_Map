@@ -118,7 +118,7 @@ def _plot_cells(ax, gdf_cells: gpd.GeoDataFrame):
         column="difficulty",
         cmap="rainbow",
         markersize=40,
-        alpha=0.8,
+        alpha=0.6,
         vmin=vmin,
         vmax=vmax,
     )
