@@ -11,6 +11,8 @@ Python must be installed. Version 3.12.3 of python was used for the development.
 
 Use the provided **run_app.command** (Mac) or **run_app.bat**(Windows) scripts for a click-and-run experience.
 
+
+
 ### Features
 
 - Interactive study area selection
