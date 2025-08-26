@@ -203,8 +203,8 @@ def analyze_study_points(study_points, segments, w_diff_on_tr, w_diff_off_tr):
                 {
                     "geometry": pt,
                     "dist_on_trails": nearest_seg["total_dist"],
-                    "total_elev_gain": nearest_seg["total_elev_gain"],
-                    "total_descent": nearest_seg["total_descent"],
+                    "tot_elev": nearest_seg["tot_elev"],
+                    "tot_desc": nearest_seg["tot_desc"],
                     "dist_out_trail": dist_to_seg,
                     "diff_alt_w_trail": diff_alt_w_trail,
                     "dist_road": nearest_seg["dist_road"],

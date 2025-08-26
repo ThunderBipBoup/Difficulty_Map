@@ -10,7 +10,6 @@ from difficulty_map.source.roads import dist_on_road
 # DISTANCE & GEOMETRY UTILITIES
 # ----------------------------- #
 
-
 def build_segment(trail, current_dist, next_dist):
     """
     Build a trail segment (LineString) between two distances along the trail geometry.
@@ -39,8 +38,7 @@ def sample_valid_raster_values(segment, src, n_points):
         Array of sampled values excluding nodata values.
     """
     distances = np.linspace(0, segment.length, n_points)
-    coords = [(segment.interpolate(d).x, segment.interpolate(d).y)
-              for d in distances]
+    coords = [(segment.interpolate(d).x, segment.interpolate(d).y) for d in distances]
     values = np.array([val[0] for val in src.sample(coords)])
 
     nodata = src.nodata if src.nodata is not None else -9999.0
@@ -63,6 +61,7 @@ def remove_segments_between(all_segments, trail_id, cp1, cp2):
             )
         )
     ]
+    
 
 # ----------------------------- #
 # INITIALIZATION
@@ -192,10 +191,10 @@ def compute_difficulty_between_points(src, cp, neighbor_cp, trail, n_points=50):
                 "end_cp": neighbor_cp,
                 "seg_length": segment_length,
                 "total_dist": total_dist,
-                "elev_gain": elevation_gain,
-                "tot_elev": total_elev_gain,  # Cumulative elevation gain
+                "elev_gain": elevation_gain, 
+                "tot_elev": total_elev_gain, # Cumulative elevation gain
                 "descent": descent,
-                "tot_desc": total_descent,  # Cumulative descent
+                "tot_desc": total_descent, # Cumulative descent
             }
         )
 
@@ -209,6 +208,9 @@ def compute_difficulty_between_points(src, cp, neighbor_cp, trail, n_points=50):
         total_elev_gain,
         total_descent,
     )
+
+
+
 
 
 def process_neighbors(cp, queue, src, all_segments_dijk, trail_difficulty_by_distance):
@@ -242,8 +244,7 @@ def process_neighbors(cp, queue, src, all_segments_dijk, trail_difficulty_by_dis
             else:
                 # Check reverse direction if forward is worse
                 segments_opp, diff_map_opp, final_diff_opp, _, _, _ = (
-                    compute_difficulty_between_points(
-                        src, neighbor_cp, cp, trail)
+                    compute_difficulty_between_points(src, neighbor_cp, cp, trail)
                 )
 
                 if final_diff_opp > cp.best_diff:

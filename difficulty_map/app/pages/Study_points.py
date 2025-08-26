@@ -300,7 +300,7 @@ if not st.session_state.study_points_results.empty:
         "dist_road": "Road distance (m)",
         "dist_on_trails": "Trail distance (m)",
         "total_elev_gain": "Total ascending elevation (m)",
-        "total_descent": "Total descending elevation (m)",
+        "tot_desc": "Total descending elevation (m)",
         "dist_out_trail": "Off-trail distance (m)",
         "diff_alt_w_trail": "Altitude difference with closest trail (m)",
         "diff": "Total Difficulty",
