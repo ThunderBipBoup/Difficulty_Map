@@ -78,10 +78,8 @@ if st.button("Reset all"):
     init_session_state()
 
 # Study area size
-side = st.sidebar.slider(
+side = st.sidebar.number_input(
     "Study area side (m)",
-    min_value=1000,
-    max_value=5000,
     value=st.session_state.side,
     step=500,
 )
