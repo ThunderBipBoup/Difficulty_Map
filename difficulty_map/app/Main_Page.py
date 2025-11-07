@@ -179,6 +179,8 @@ if user_pt and proj_pt:
     line = LineString([user_pt, proj_pt])
     ax.plot(*line.xy, "k--", linewidth=1, label="Projection Line")
 
+ax.set_xlabel("Longitude (m)")
+ax.set_ylabel("Latitude (m)")
 ax.legend()
 ax.set_title("Study Area")
 st.pyplot(fig)

@@ -20,8 +20,8 @@ def _init_plot(figsize=(8, 8), title: str = "") -> Tuple[plt.Figure, plt.Axes]:
     fig, ax = plt.subplots(figsize=figsize)
     if title:
         ax.set_title(title)
-    ax.set_xlabel("Longitude")
-    ax.set_ylabel("Latitude")
+    ax.set_xlabel("Longitude (m)")
+    ax.set_ylabel("Latitude (m)")
     return fig, ax
 
 

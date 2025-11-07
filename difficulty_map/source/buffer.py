@@ -28,7 +28,7 @@ def generate_buffer_grid(segments, buffer_width, cell_size):
         Raster transform mapping rows/cols to coordinates.
     """
     union = gpd.GeoSeries([seg["geometry"] for seg in segments]).unary_union
-    buffered = union.buffer(buffer_width)
+    buffered = union.buffer(buffer_width) # buffer from shapely package
 
     bounds = buffered.bounds
     width = int((bounds[2] - bounds[0]) // cell_size)

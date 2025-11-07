@@ -157,7 +157,6 @@ def compute_difficulty_between_points(src, cp, neighbor_cp, trail, n_points=50):
 
         segment_length = seg["geometry"].length
         # Difficulty for this segment = sum of absolute raster values
-        seg_diff = np.nansum(np.abs(values))
 
         # Track elevation changes
         elevation_gain = 0
@@ -169,6 +168,9 @@ def compute_difficulty_between_points(src, cp, neighbor_cp, trail, n_points=50):
             else:
                 descent += delta
 
+        seg_diff = segment_length + (elevation_gain + 0.3 * descent)
+        #TODO : pouvoir régler les paramètres de cette formule !!
+        
         # Update cumulative totals
         total_diff += seg_diff
         total_dist += segment_length
